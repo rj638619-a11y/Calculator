@@ -1,4 +1,4 @@
-name: Build and Release Debug APK
+name: Build and Publish Debug APK
 
 on:
   push:
@@ -54,7 +54,7 @@ jobs:
           if [ -f "./debug.keystore" ]; then
             echo "debug.keystore already exists."
           else
-            echo "Generating temporary debug.keystore..."
+            echo "Generating temporary debug keystore for build..."
             keytool -genkeypair \
               -v \
               -keystore ./debug.keystore \
@@ -96,7 +96,8 @@ jobs:
             *) echo "::error::File does not have .apk extension: $EXPECTED_APK"; exit 1 ;;
           esac
           
-          echo "Verified APK at $EXPECTED_APK ($(stat -c%s "$EXPECTED_APK" 2>/dev/null || wc -c < "$EXPECTED_APK") bytes)"
+          APK_SIZE=$(stat -c%s "$EXPECTED_APK" 2>/dev/null || wc -c < "$EXPECTED_APK")
+          echo "Verified debug APK at $EXPECTED_APK ($APK_SIZE bytes)"
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
@@ -145,28 +146,23 @@ jobs:
             exit 1
           fi
           
-          case "$ASSET_PATH" in
-            *.apk) ;;
-            *) echo "::error::Release asset is not an APK: $ASSET_PATH"; exit 1 ;;
-          esac
-          
           TAG="debug-apk-build-${{ github.run_number }}-${{ github.run_attempt }}"
           TITLE="Debug APK Build #${{ github.run_number }}"
           
           NOTES=$(cat <<EOF
-### 🤖 Automated Debug APK Build
+### 🤖 Android Debug Build
 
 This is an automatically generated debug APK built by GitHub Actions.
 
-- **Build Run Number:** ${{ github.run_number }}
-- **Build Attempt:** ${{ github.run_attempt }}
-- **Source Commit:** \`${{ github.sha }}\`
+- **Workflow Run:** #${{ github.run_number }}
+- **Attempt:** #${{ github.run_attempt }}
+- **Commit SHA:** \`${{ github.sha }}\`
 - **Asset Filename:** \`${ASSET_NAME}\`
 
-> ⚠️ **Testing Notice:**
-> - This APK is intended for testing and demonstration purposes.
-> - This is **not** a Google Play Store production release.
-> - This APK is signed with a temporary debug keystore.
+> ℹ️ **Notice:**
+> - This APK is intended for testing and development purposes.
+> - This is not a Google Play Store production release.
+> - The APK is signed only with a temporary debug keystore.
 EOF
 )
 
@@ -209,16 +205,16 @@ EOF
               echo "- **Tag:** \`$TAG\`"
               echo "- **Download APK:** [$ASSET_NAME]($RELEASE_URL)"
               echo ""
-              echo "You can download the APK directly to your phone from the release **Assets** section."
+              echo "You can download the APK file directly on your phone or device from the release **Assets** section."
               echo ""
-              echo "> 📦 **Backup:** The standard GitHub Actions artifact \`app-debug-apk\` is also available on this workflow run."
+              echo "> 📦 **Backup:** The GitHub Actions artifact \`app-debug-apk\` is also available on this workflow run."
             } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "::warning::GitHub Release publishing was skipped or encountered an issue. The debug APK artifact is still available."
+            echo "::warning::GitHub Release publishing was skipped or encountered an issue. The debug APK artifact remains available."
             echo "The build step succeeded and the Actions artifact 'app-debug-apk' was preserved."
             
             {
-              echo "## ⚠️ Debug APK Build Succeeded (Release Publishing Skipped/Failed)"
+              echo "## ℹ️ Debug APK Build Succeeded (Release Publishing Skipped/Failed)"
               echo ""
               echo "The debug APK was built successfully and uploaded as a GitHub Actions artifact."
               echo ""
