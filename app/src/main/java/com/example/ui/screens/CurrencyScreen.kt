@@ -167,10 +167,10 @@ fun CurrencyScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(CircleShape)
                             .background(theme.surfaceGlassLight.copy(alpha = 0.6f))
                             .clickable { currencyPickerTarget = "FROM" }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(text = fromInfo.flag, fontSize = 22.sp)
                         Spacer(modifier = Modifier.width(6.dp))
@@ -240,10 +240,10 @@ fun CurrencyScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(CircleShape)
                             .background(theme.surfaceGlassLight.copy(alpha = 0.6f))
                             .clickable { currencyPickerTarget = "TO" }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(text = toInfo.flag, fontSize = 22.sp)
                         Spacer(modifier = Modifier.width(6.dp))
@@ -298,13 +298,13 @@ fun CurrencyScreen(
         LiquidGlassCard(
             theme = theme,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = CircleShape,
             highlightIntensity = 0.25f
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -428,6 +428,7 @@ fun CurrencyScreen(
                     onValueChange = { currencySearchQuery = it },
                     placeholder = { Text("Search by code or country...", color = Color.Gray) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                    shape = CircleShape,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,
@@ -449,11 +450,11 @@ fun CurrencyScreen(
                         .fillMaxWidth()
                         .height(350.dp)
                 ) {
-                    items(filteredCurrencies) { item ->
+                    items(filteredCurrencies, key = { it.code }) { item ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(CircleShape)
                                 .clickable {
                                     if (target == "FROM") {
                                         viewModel.setFromCurrency(item.code)
@@ -462,7 +463,7 @@ fun CurrencyScreen(
                                     }
                                     currencyPickerTarget = null
                                 }
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {

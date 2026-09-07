@@ -99,13 +99,13 @@ fun ToolsScreen(
                 val isSelected = tab == state.toolsSubTab
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(CircleShape)
                         .background(
                             if (isSelected) theme.primaryAccent.copy(alpha = 0.25f)
                             else theme.surfaceGlassLight.copy(alpha = 0.4f)
                         )
                         .clickable { viewModel.setToolsSubTab(tab) }
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                         .testTag("tool_subtab_${tab.name.lowercase()}"),
                     contentAlignment = Alignment.Center
                 ) {
@@ -190,9 +190,9 @@ private fun TipSplitterSection(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(CircleShape)
                         .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
@@ -221,6 +221,7 @@ private fun TipSplitterSection(
                 OutlinedTextField(
                     value = state.tipBill,
                     onValueChange = { viewModel.setTipBill(it) },
+                    shape = CircleShape,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = theme.textPrimary,
                         unfocusedTextColor = theme.textPrimary,
@@ -267,7 +268,7 @@ private fun TipSplitterSection(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(CircleShape)
                                 .background(
                                     if (isSelected) theme.primaryAccent
                                     else theme.surfaceGlassLight.copy(alpha = 0.5f)
@@ -388,7 +389,7 @@ private fun PercentageCalcSection(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(CircleShape)
                         .background(
                             if (isSelected) theme.primaryAccent.copy(alpha = 0.25f)
                             else theme.surfaceGlassLight.copy(alpha = 0.4f)
@@ -419,6 +420,7 @@ private fun PercentageCalcSection(
                                 value = state.percentValA,
                                 onValueChange = { viewModel.setPercentValA(it) },
                                 label = { Text("Percent (%)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -429,6 +431,7 @@ private fun PercentageCalcSection(
                                 value = state.percentValB,
                                 onValueChange = { viewModel.setPercentValB(it) },
                                 label = { Text("Total (Y)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -457,6 +460,7 @@ private fun PercentageCalcSection(
                                 value = state.percentValA,
                                 onValueChange = { viewModel.setPercentValA(it) },
                                 label = { Text("Part (X)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -467,6 +471,7 @@ private fun PercentageCalcSection(
                                 value = state.percentValB,
                                 onValueChange = { viewModel.setPercentValB(it) },
                                 label = { Text("Whole (Y)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -495,6 +500,7 @@ private fun PercentageCalcSection(
                                 value = state.percentValA,
                                 onValueChange = { viewModel.setPercentValA(it) },
                                 label = { Text("Initial (A)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -505,6 +511,7 @@ private fun PercentageCalcSection(
                                 value = state.percentValB,
                                 onValueChange = { viewModel.setPercentValB(it) },
                                 label = { Text("Final (B)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -532,6 +539,7 @@ private fun PercentageCalcSection(
                             value = state.discountOriginal,
                             onValueChange = { viewModel.setDiscountInputs(it, state.discountPercent, state.discountTax) },
                             label = { Text("Original Price ($)") },
+                            shape = CircleShape,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = theme.textPrimary,
                                 unfocusedTextColor = theme.textPrimary
@@ -544,6 +552,7 @@ private fun PercentageCalcSection(
                                 value = state.discountPercent,
                                 onValueChange = { viewModel.setDiscountInputs(state.discountOriginal, it, state.discountTax) },
                                 label = { Text("Discount (%)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -554,6 +563,7 @@ private fun PercentageCalcSection(
                                 value = state.discountTax,
                                 onValueChange = { viewModel.setDiscountInputs(state.discountOriginal, state.discountPercent, it) },
                                 label = { Text("Tax (%)") },
+                                shape = CircleShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = theme.textPrimary,
                                     unfocusedTextColor = theme.textPrimary
@@ -635,7 +645,7 @@ private fun DateCalcSection(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(CircleShape)
                         .background(
                             if (isSelected) theme.primaryAccent.copy(alpha = 0.25f)
                             else theme.surfaceGlassLight.copy(alpha = 0.4f)
@@ -661,12 +671,12 @@ private fun DateCalcSection(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(CircleShape)
                             .background(theme.surfaceGlassLight.copy(alpha = 0.5f))
                             .clickable {
                                 showDatePicker(state.dateStartMillis) { viewModel.setDateStart(it) }
                             }
-                            .padding(12.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -688,12 +698,12 @@ private fun DateCalcSection(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(CircleShape)
                             .background(theme.surfaceGlassLight.copy(alpha = 0.5f))
                             .clickable {
                                 showDatePicker(state.dateEndMillis) { viewModel.setDateEnd(it) }
                             }
-                            .padding(12.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -715,9 +725,9 @@ private fun DateCalcSection(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(32.dp))
                             .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
-                            .padding(14.dp)
+                            .padding(16.dp)
                     ) {
                         Text(
                             text = "${state.dateDiffResult.totalDays} Total Days",
@@ -765,12 +775,12 @@ private fun DateCalcSection(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(CircleShape)
                             .background(theme.surfaceGlassLight.copy(alpha = 0.5f))
                             .clickable {
                                 showDatePicker(state.dateStartMillis) { viewModel.setDateStart(it) }
                             }
-                            .padding(12.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -796,7 +806,7 @@ private fun DateCalcSection(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(CircleShape)
                                 .background(if (state.dateIsAdd) theme.primaryAccent else theme.surfaceGlassLight)
                                 .clickable {
                                     viewModel.setDateAddParams(
@@ -816,7 +826,7 @@ private fun DateCalcSection(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(CircleShape)
                                 .background(if (!state.dateIsAdd) Color(0xFFFF5C8A) else theme.surfaceGlassLight)
                                 .clickable {
                                     viewModel.setDateAddParams(
@@ -858,7 +868,7 @@ private fun DateCalcSection(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(32.dp))
                             .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
                             .padding(14.dp)
                     ) {
@@ -889,9 +899,9 @@ private fun DateParamField(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(CircleShape)
                 .background(theme.surfaceGlassLight)
-                .padding(vertical = 4.dp),
+                .padding(vertical = 4.dp, horizontal = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

@@ -1,56 +1,87 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.engine.ExpressionEvaluator
 import com.example.ui.components.AppNavTab
 import com.example.ui.components.CalcButtonType
 import com.example.ui.components.LiquidGlassButton
 import com.example.ui.components.LiquidGlassCard
+import com.example.ui.theme.ThemeMode
 import com.example.ui.viewmodel.CalculatorUiState
 import com.example.ui.viewmodel.CalculatorViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun CalculatorScreen(
@@ -60,106 +91,150 @@ fun CalculatorScreen(
 ) {
     val theme = state.theme
     val expScrollState = rememberScrollState()
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var showCopiedToast by remember { mutableStateOf(false) }
+    var dragAccumulator by remember { mutableFloatStateOf(0f) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // ----------------------------------------------------
-        // Top Glass Control Bar
+        // Top Minimal Status Bar: Mode, Memory, & Gesture Tip
         // ----------------------------------------------------
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(top = 2.dp, bottom = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // DEG / RAD Toggle Button
-            LiquidGlassButton(
-                text = if (state.angleMode == ExpressionEvaluator.AngleMode.DEG) "DEG" else "RAD",
-                onClick = { viewModel.toggleAngleMode() },
-                theme = theme,
-                type = CalcButtonType.FUNCTION,
-                fontSize = 13.sp,
-                shape = RoundedCornerShape(14.dp),
+            // DEG / RAD Toggle Pill
+            Box(
                 modifier = Modifier
-                    .height(36.dp)
-                    .width(68.dp),
-                testTag = "deg_rad_toggle"
-            )
+                    .clip(CircleShape)
+                    .background(theme.surfaceGlassLight.copy(alpha = 0.5f))
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.toggleAngleMode()
+                    }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .testTag("deg_rad_toggle"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (state.angleMode == ExpressionEvaluator.AngleMode.DEG) "DEG" else "RAD",
+                    color = theme.primaryAccent,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+            }
 
-            // Center: Memory indicator
+            // Memory Status Pill (if active)
             if (state.hasMemory) {
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = CircleShape,
                     color = theme.primaryAccent.copy(alpha = 0.2f),
-                    modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                    modifier = Modifier.clip(CircleShape)
                 ) {
                     Text(
-                        text = "M (${ExpressionEvaluator.formatResult(state.memoryValue)})",
+                        text = "M = ${ExpressionEvaluator.formatResult(state.memoryValue)}",
                         color = theme.primaryAccent,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             } else {
-                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Swipe display to backspace",
+                    color = theme.textSecondary.copy(alpha = 0.45f),
+                    fontSize = 11.sp,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
             }
 
-            // Right: Scientific Expand Toggle & Quick History
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Toggle Scientific Keypad
-                LiquidGlassButton(
-                    text = if (state.isScientificExpanded) "Sci ▲" else "Sci ▼",
-                    onClick = { viewModel.toggleScientific() },
-                    theme = theme,
-                    type = if (state.isScientificExpanded) CalcButtonType.OPERATOR else CalcButtonType.FUNCTION,
-                    fontSize = 13.sp,
-                    shape = RoundedCornerShape(14.dp),
+            // Copied Floating Indicator
+            AnimatedVisibility(
+                visible = showCopiedToast,
+                enter = fadeIn(tween(150)) + slideInVertically { -it },
+                exit = fadeOut(tween(200)) + slideOutVertically { -it }
+            ) {
+                Box(
                     modifier = Modifier
-                        .height(36.dp)
-                        .width(76.dp),
-                    testTag = "sci_toggle_btn"
-                )
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                // History Shortcut
-                LiquidGlassButton(
-                    text = "History",
-                    icon = Icons.Default.History,
-                    onClick = { viewModel.selectTab(AppNavTab.HISTORY) },
-                    theme = theme,
-                    type = CalcButtonType.FUNCTION,
-                    shape = CircleShape,
-                    modifier = Modifier.size(36.dp),
-                    testTag = "quick_history_btn"
-                )
+                        .clip(CircleShape)
+                        .background(theme.primaryAccent)
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Copied!",
+                        color = Color.Black,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
         // ----------------------------------------------------
-        // Liquid Glass Display Screen
+        // Modern Samsung / iOS Style Spacious Expression Display
+        // Gestures enabled:
+        // - Horizontal Swipe Left/Right -> Backspace
+        // - Long Press -> Copy result
         // ----------------------------------------------------
         LiquidGlassCard(
             theme = theme,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f, fill = false)
-                .padding(vertical = 6.dp),
-            highlightIntensity = 0.6f
+                .padding(vertical = 4.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            val textToCopy = state.evaluatedResult.ifEmpty {
+                                state.liveResult.ifEmpty { state.expression.ifEmpty { "0" } }
+                            }
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.copyToClipboard(textToCopy)
+                            showCopiedToast = true
+                            scope.launch {
+                                delay(1600)
+                                showCopiedToast = false
+                            }
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragAccumulator = 0f },
+                        onDragEnd = { dragAccumulator = 0f },
+                        onHorizontalDrag = { _, dragAmount ->
+                            dragAccumulator += dragAmount
+                            // Swipe threshold to trigger backspace
+                            if (Math.abs(dragAccumulator) > 35f) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.onBackspace()
+                                dragAccumulator = 0f
+                            }
+                        }
+                    )
+                },
+            highlightIntensity = 0.5f,
+            shape = RoundedCornerShape(28.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Copy & Clear Row
+                // Top Header Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -167,33 +242,41 @@ fun CalculatorScreen(
                 ) {
                     Text(
                         text = if (state.isScientificExpanded) "SCIENTIFIC" else "STANDARD",
-                        color = theme.textSecondary.copy(alpha = 0.6f),
+                        color = theme.textSecondary.copy(alpha = 0.5f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.5.sp
+                        letterSpacing = 1.2.sp
                     )
 
-                    Row {
-                        if (state.expression.isNotEmpty() || state.evaluatedResult.isNotEmpty()) {
-                            IconButton(
-                                onClick = {
-                                    val textToCopy = state.evaluatedResult.ifEmpty { state.liveResult.ifEmpty { state.expression } }
-                                    viewModel.copyToClipboard(textToCopy)
-                                },
-                                modifier = Modifier.size(32.dp).testTag("copy_calc_btn")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = "Copy result",
-                                    tint = theme.textSecondary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                    if (state.expression.isNotEmpty() || state.evaluatedResult.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                val textToCopy = state.evaluatedResult.ifEmpty {
+                                    state.liveResult.ifEmpty { state.expression }
+                                }
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.copyToClipboard(textToCopy)
+                                showCopiedToast = true
+                                scope.launch {
+                                    delay(1600)
+                                    showCopiedToast = false
+                                }
+                            },
+                            modifier = Modifier.size(28.dp).testTag("copy_calc_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = "Copy result",
+                                tint = theme.textSecondary.copy(alpha = 0.7f),
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
 
-                // Active Formula / Expression Line (Scrollable horizontally)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Active Formula / Expression Line (Horizontal scrollable, iOS/Samsung bold typography)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -201,11 +284,18 @@ fun CalculatorScreen(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val expFontSize = when {
+                        state.expression.length > 20 -> 24.sp
+                        state.expression.length > 14 -> 30.sp
+                        state.expression.length > 8 -> 36.sp
+                        else -> 42.sp
+                    }
+
                     Text(
                         text = if (state.expression.isEmpty()) "0" else state.expression,
                         color = if (state.isError) Color(0xFFFF6B6B) else theme.textPrimary,
-                        fontSize = if (state.expression.length > 14) 28.sp else 38.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = expFontSize,
+                        fontWeight = FontWeight.Light,
                         fontFamily = FontFamily.SansSerif,
                         textAlign = TextAlign.End,
                         maxLines = 1,
@@ -215,57 +305,221 @@ fun CalculatorScreen(
 
                 // Live Preview or Final Evaluated Result / Error
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    if (state.isError) {
-                        Text(
-                            text = state.errorMessage.ifEmpty { "Error" },
-                            color = Color(0xFFFF5C8A),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    } else if (state.evaluatedResult.isNotEmpty()) {
-                        Text(
-                            text = "= ${state.evaluatedResult}",
-                            color = theme.primaryAccent,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.testTag("calc_evaluated_result")
-                        )
-                    } else if (state.liveResult.isNotEmpty()) {
-                        Text(
-                            text = "= ${state.liveResult}",
-                            color = theme.primaryAccent.copy(alpha = 0.75f),
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.testTag("calc_live_result")
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.height(20.dp))
+                    val resultText = when {
+                        state.isError -> state.errorMessage.ifEmpty { "Error" }
+                        state.evaluatedResult.isNotEmpty() -> "= ${state.evaluatedResult}"
+                        state.liveResult.isNotEmpty() -> "= ${state.liveResult}"
+                        else -> ""
+                    }
+
+                    AnimatedContent(
+                        targetState = resultText,
+                        transitionSpec = {
+                            (slideInVertically(
+                                animationSpec = spring(
+                                    dampingRatio = 0.65f,
+                                    stiffness = Spring.StiffnessMedium
+                                )
+                            ) { height -> height / 2 } + fadeIn(
+                                animationSpec = spring(
+                                    dampingRatio = 0.65f,
+                                    stiffness = Spring.StiffnessMedium
+                                )
+                            )) togetherWith (slideOutVertically(
+                                animationSpec = tween(140, easing = FastOutSlowInEasing)
+                            ) { -it / 2 } + fadeOut(
+                                animationSpec = tween(140)
+                            ))
+                        },
+                        label = "resultTransition"
+                    ) { targetText ->
+                        if (targetText.isEmpty()) {
+                            Spacer(modifier = Modifier.height(20.dp))
+                        } else if (state.isError) {
+                            Text(
+                                text = targetText,
+                                color = Color(0xFFFF5252),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        } else if (state.evaluatedResult.isNotEmpty()) {
+                            Text(
+                                text = targetText,
+                                color = theme.primaryAccent,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.testTag("calc_evaluated_result")
+                            )
+                        } else {
+                            Text(
+                                text = targetText,
+                                color = theme.primaryAccent.copy(alpha = 0.8f),
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.testTag("calc_live_result")
+                            )
+                        }
                     }
                 }
             }
         }
 
         // ----------------------------------------------------
-        // Expandable Scientific Keypad
+        // Samsung One UI Style Quick Action Bar (fx, History, Converter, Theme, Backspace)
+        // ----------------------------------------------------
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Scientific Mode Toggle (fx)
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(
+                        if (state.isScientificExpanded) theme.primaryAccent.copy(alpha = 0.35f)
+                        else theme.surfaceGlassLight.copy(alpha = 0.45f)
+                    )
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.toggleScientific()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .testTag("sci_toggle_btn"),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Functions,
+                        contentDescription = "Scientific Functions",
+                        tint = if (state.isScientificExpanded) theme.primaryAccent else theme.textSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "fx",
+                        color = if (state.isScientificExpanded) theme.primaryAccent else theme.textSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Quick Unit Converter Switcher
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.selectTab(AppNavTab.UNITS)
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SwapHoriz,
+                    contentDescription = "Converter",
+                    tint = theme.textSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Quick History
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.selectTab(AppNavTab.HISTORY)
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+                    .testTag("quick_history_btn")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "History",
+                    tint = theme.textSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Theme Palette Picker
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    showThemeDialog = true
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+                    .testTag("theme_picker_btn")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Palette,
+                    contentDescription = "Choose Theme Color",
+                    tint = theme.primaryAccent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Quick Backspace Button
+            IconButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.onBackspace()
+                },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+                    .testTag("toolbar_backspace_btn")
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Backspace,
+                    contentDescription = "Backspace",
+                    tint = theme.primaryAccent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        // ----------------------------------------------------
+        // Expandable Scientific Keypad (Samsung / iOS Pro Style)
         // ----------------------------------------------------
         AnimatedVisibility(
             visible = state.isScientificExpanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = expandVertically(
+                animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMedium),
+                expandFrom = Alignment.Top
+            ) + slideInVertically(
+                animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMedium)
+            ) { -it / 3 } + fadeIn(tween(200, easing = FastOutSlowInEasing)),
+            exit = shrinkVertically(
+                animationSpec = tween(180, easing = FastOutSlowInEasing),
+                shrinkTowards = Alignment.Top
+            ) + slideOutVertically(
+                animationSpec = tween(180, easing = FastOutSlowInEasing)
+            ) { -it / 3 } + fadeOut(tween(140))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Sci Row 1: sin, cos, tan, log, ln
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf("sin", "cos", "tan", "log", "ln").forEach { func ->
                         LiquidGlassButton(
@@ -284,7 +538,7 @@ fun CalculatorScreen(
                 // Sci Row 2: asin, acos, atan, √, ∛
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf("asin" to "asin", "acos" to "acos", "atan" to "atan", "√" to "sqrt", "∛" to "cbrt").forEach { (label, func) ->
                         LiquidGlassButton(
@@ -303,9 +557,9 @@ fun CalculatorScreen(
                 // Sci Row 3: x^y, x², x³, x!, 1/x
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    listOf("x^y" to "x^y", "x²" to "x²", "x³" to "x³", "x!" to "!", "1/x" to "1/x").forEach { (label, op) ->
+                    listOf("x^y" to "^", "x²" to "^2", "x³" to "^3", "x!" to "!", "1/x" to "1/").forEach { (label, op) ->
                         LiquidGlassButton(
                             text = label,
                             onClick = { viewModel.onInput(op) },
@@ -322,14 +576,14 @@ fun CalculatorScreen(
                 // Sci Row 4: π, e, MC, MR, M+, M-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     LiquidGlassButton(
                         text = "π",
                         onClick = { viewModel.onInput("π") },
                         theme = theme,
                         type = CalcButtonType.FUNCTION,
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                         modifier = Modifier.weight(1f).height(38.dp)
                     )
                     LiquidGlassButton(
@@ -337,7 +591,7 @@ fun CalculatorScreen(
                         onClick = { viewModel.onInput("e") },
                         theme = theme,
                         type = CalcButtonType.FUNCTION,
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                         modifier = Modifier.weight(1f).height(38.dp)
                     )
                     LiquidGlassButton(
@@ -377,77 +631,79 @@ fun CalculatorScreen(
         }
 
         // ----------------------------------------------------
-        // Primary Tactile Glass Keypad
+        // Modern Minimalist 4-Column Keypad (iOS & Samsung Style)
         // ----------------------------------------------------
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 2.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Row 1: AC, (, ), ⌫, ÷
+            // Row 1: AC, ( ), %, ÷
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // AC / C button: Changes to "C" if expression is not empty
+                val clearText = if (state.expression.isEmpty()) "AC" else "C"
                 LiquidGlassButton(
-                    text = "AC",
+                    text = clearText,
                     onClick = { viewModel.onClear() },
                     theme = theme,
                     type = CalcButtonType.ACTION,
-                    fontSize = 18.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    fontSize = 20.sp,
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_ac"
                 )
                 LiquidGlassButton(
-                    text = "(",
-                    onClick = { viewModel.onInput("(") },
+                    text = "( )",
+                    onClick = {
+                        // Intelligent parentheses insertion
+                        val openCount = state.expression.count { it == '(' }
+                        val closeCount = state.expression.count { it == ')' }
+                        if (openCount > closeCount && state.expression.lastOrNull()?.isDigit() == true) {
+                            viewModel.onInput(")")
+                        } else {
+                            viewModel.onInput("(")
+                        }
+                    },
                     theme = theme,
                     type = CalcButtonType.FUNCTION,
                     fontSize = 20.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    testTag = "btn_open_paren"
+                    modifier = Modifier.weight(1f).height(58.dp),
+                    testTag = "btn_parens"
                 )
                 LiquidGlassButton(
-                    text = ")",
-                    onClick = { viewModel.onInput(")") },
+                    text = "%",
+                    onClick = { viewModel.onInput("%") },
                     theme = theme,
                     type = CalcButtonType.FUNCTION,
                     fontSize = 20.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    testTag = "btn_close_paren"
-                )
-                LiquidGlassButton(
-                    text = "Del",
-                    icon = Icons.AutoMirrored.Filled.Backspace,
-                    onClick = { viewModel.onBackspace() },
-                    theme = theme,
-                    type = CalcButtonType.ACTION,
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    testTag = "btn_backspace"
+                    modifier = Modifier.weight(1f).height(58.dp),
+                    testTag = "btn_mod"
                 )
                 LiquidGlassButton(
                     text = "÷",
                     onClick = { viewModel.onInput("÷") },
                     theme = theme,
                     type = CalcButtonType.OPERATOR,
-                    fontSize = 24.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    fontSize = 26.sp,
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_divide"
                 )
             }
 
-            // Row 2: 7, 8, 9, %, ×
+            // Row 2: 7, 8, 9, ×
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 LiquidGlassButton(
                     text = "7",
                     onClick = { viewModel.onInput("7") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_7"
                 )
                 LiquidGlassButton(
@@ -455,7 +711,7 @@ fun CalculatorScreen(
                     onClick = { viewModel.onInput("8") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_8"
                 )
                 LiquidGlassButton(
@@ -463,40 +719,31 @@ fun CalculatorScreen(
                     onClick = { viewModel.onInput("9") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_9"
-                )
-                LiquidGlassButton(
-                    text = "%",
-                    onClick = { viewModel.onInput("%") },
-                    theme = theme,
-                    type = CalcButtonType.OPERATOR,
-                    fontSize = 20.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    testTag = "btn_mod"
                 )
                 LiquidGlassButton(
                     text = "×",
                     onClick = { viewModel.onInput("×") },
                     theme = theme,
                     type = CalcButtonType.OPERATOR,
-                    fontSize = 24.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    fontSize = 26.sp,
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_multiply"
                 )
             }
 
-            // Row 3: 4, 5, 6, x^y (or √), −
+            // Row 3: 4, 5, 6, −
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 LiquidGlassButton(
                     text = "4",
                     onClick = { viewModel.onInput("4") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_4"
                 )
                 LiquidGlassButton(
@@ -504,7 +751,7 @@ fun CalculatorScreen(
                     onClick = { viewModel.onInput("5") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_5"
                 )
                 LiquidGlassButton(
@@ -512,40 +759,31 @@ fun CalculatorScreen(
                     onClick = { viewModel.onInput("6") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_6"
-                )
-                LiquidGlassButton(
-                    text = "^",
-                    onClick = { viewModel.onInput("^") },
-                    theme = theme,
-                    type = CalcButtonType.OPERATOR,
-                    fontSize = 20.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    testTag = "btn_pow"
                 )
                 LiquidGlassButton(
                     text = "−",
                     onClick = { viewModel.onInput("-") },
                     theme = theme,
                     type = CalcButtonType.OPERATOR,
-                    fontSize = 24.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    fontSize = 26.sp,
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_minus"
                 )
             }
 
-            // Row 4: 1, 2, 3, +/-, +
+            // Row 4: 1, 2, 3, +
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 LiquidGlassButton(
                     text = "1",
                     onClick = { viewModel.onInput("1") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_1"
                 )
                 LiquidGlassButton(
@@ -553,7 +791,7 @@ fun CalculatorScreen(
                     onClick = { viewModel.onInput("2") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_2"
                 )
                 LiquidGlassButton(
@@ -561,40 +799,40 @@ fun CalculatorScreen(
                     onClick = { viewModel.onInput("3") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_3"
-                )
-                LiquidGlassButton(
-                    text = "+/-",
-                    onClick = { viewModel.onInput("+/-") },
-                    theme = theme,
-                    type = CalcButtonType.FUNCTION,
-                    fontSize = 18.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    testTag = "btn_negate"
                 )
                 LiquidGlassButton(
                     text = "+",
                     onClick = { viewModel.onInput("+") },
                     theme = theme,
                     type = CalcButtonType.OPERATOR,
-                    fontSize = 24.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    fontSize = 26.sp,
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_plus"
                 )
             }
 
-            // Row 5: 0 (span 2), ., = (span 2)
+            // Row 5: +/-, 0, ., =
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                LiquidGlassButton(
+                    text = "+/-",
+                    onClick = { viewModel.onInput("+/-") },
+                    theme = theme,
+                    type = CalcButtonType.FUNCTION,
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f).height(58.dp),
+                    testTag = "btn_negate"
+                )
                 LiquidGlassButton(
                     text = "0",
                     onClick = { viewModel.onInput("0") },
                     theme = theme,
                     type = CalcButtonType.NUMBER,
-                    modifier = Modifier.weight(2f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_0"
                 )
                 LiquidGlassButton(
@@ -603,7 +841,7 @@ fun CalculatorScreen(
                     theme = theme,
                     type = CalcButtonType.NUMBER,
                     fontSize = 24.sp,
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_dot"
                 )
                 LiquidGlassButton(
@@ -612,9 +850,139 @@ fun CalculatorScreen(
                     theme = theme,
                     type = CalcButtonType.EQUALS,
                     fontSize = 28.sp,
-                    modifier = Modifier.weight(2f).height(56.dp),
+                    modifier = Modifier.weight(1f).height(58.dp),
                     testTag = "btn_equals"
                 )
+            }
+        }
+    }
+
+    // ----------------------------------------------------
+    // Theme Selector Dialog / Bottom Sheet
+    // ----------------------------------------------------
+    if (showThemeDialog) {
+        Dialog(onDismissRequest = { showThemeDialog = false }) {
+            LiquidGlassCard(
+                theme = theme,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                shape = RoundedCornerShape(32.dp),
+                highlightIntensity = 0.5f
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Theme Colors",
+                            color = theme.textPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = { showThemeDialog = false },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = theme.textSecondary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(380.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(ThemeMode.values(), key = { it.name }) { mode ->
+                            val isSelected = mode == state.theme
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(
+                                        if (isSelected) theme.primaryAccent.copy(alpha = 0.20f)
+                                        else theme.surfaceGlassLight.copy(alpha = 0.35f)
+                                    )
+                                    .border(
+                                        width = if (isSelected) 1.5.dp else 0.5.dp,
+                                        color = if (isSelected) mode.primaryAccent else Color.White.copy(alpha = 0.1f),
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.setTheme(mode)
+                                        showThemeDialog = false
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = mode.title,
+                                        color = if (isSelected) mode.primaryAccent else theme.textPrimary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = mode.description,
+                                        color = theme.textSecondary.copy(alpha = 0.7f),
+                                        fontSize = 11.sp,
+                                        maxLines = 1
+                                    )
+                                }
+
+                                // Color Palette preview circles
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(CircleShape)
+                                            .background(mode.primaryAccent)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(CircleShape)
+                                            .background(mode.secondaryAccent)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(CircleShape)
+                                            .background(mode.backgroundColors.first())
+                                    )
+
+                                    if (isSelected) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = mode.primaryAccent,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -145,13 +145,13 @@ fun HistoryScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = CircleShape,
             highlightIntensity = 0.3f
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -171,6 +171,7 @@ fun HistoryScreen(
                             fontSize = 14.sp
                         )
                     },
+                    shape = CircleShape,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = theme.textPrimary,
                         unfocusedTextColor = theme.textPrimary,
@@ -284,7 +285,7 @@ fun HistoryScreen(
                 }
             },
             containerColor = Color(0xFF1E293B),
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(32.dp)
         )
     }
 }
@@ -305,13 +306,13 @@ private fun HistoryItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("history_item_${item.id}"),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(32.dp),
         highlightIntensity = 0.4f
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(16.dp)
         ) {
             // Top Row: Type badge + Date + Favorite + Delete
             Row(
@@ -322,9 +323,9 @@ private fun HistoryItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(CircleShape)
                             .background(theme.primaryAccent.copy(alpha = 0.15f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = item.calculationType,

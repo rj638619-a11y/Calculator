@@ -7,8 +7,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -87,7 +91,28 @@ class MainActivity : ComponentActivity() {
                             AnimatedContent(
                                 targetState = state.currentTab,
                                 transitionSpec = {
-                                    fadeIn() togetherWith fadeOut()
+                                    val forward = targetState.ordinal > initialState.ordinal
+                                    if (forward) {
+                                        (slideInHorizontally(
+                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                        ) { width -> (width * 0.25f).toInt() } + fadeIn(
+                                            animationSpec = tween(250, easing = FastOutSlowInEasing)
+                                        )) togetherWith (slideOutHorizontally(
+                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                        ) { width -> (-width * 0.25f).toInt() } + fadeOut(
+                                            animationSpec = tween(200, easing = FastOutSlowInEasing)
+                                        ))
+                                    } else {
+                                        (slideInHorizontally(
+                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                        ) { width -> (-width * 0.25f).toInt() } + fadeIn(
+                                            animationSpec = tween(250, easing = FastOutSlowInEasing)
+                                        )) togetherWith (slideOutHorizontally(
+                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                        ) { width -> (width * 0.25f).toInt() } + fadeOut(
+                                            animationSpec = tween(200, easing = FastOutSlowInEasing)
+                                        ))
+                                    }
                                 },
                                 label = "TabTransition"
                             ) { tab ->

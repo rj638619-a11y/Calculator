@@ -93,13 +93,13 @@ fun UnitConverterScreen(
                 val isSelected = category == state.unitCategory
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(CircleShape)
                         .background(
                             if (isSelected) theme.primaryAccent.copy(alpha = 0.25f)
                             else theme.surfaceGlassLight.copy(alpha = 0.4f)
                         )
                         .clickable { viewModel.selectUnitCategory(category) }
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                         .testTag("unit_cat_${category.name.lowercase()}"),
                     contentAlignment = Alignment.Center
                 ) {
@@ -139,10 +139,10 @@ fun UnitConverterScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(CircleShape)
                             .background(theme.surfaceGlassLight.copy(alpha = 0.6f))
                             .clickable { unitPickerTarget = "FROM" }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
                             text = "${state.fromUnit.name} (${state.fromUnit.symbol})",
@@ -205,10 +205,10 @@ fun UnitConverterScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(CircleShape)
                             .background(theme.surfaceGlassLight.copy(alpha = 0.6f))
                             .clickable { unitPickerTarget = "TO" }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
                             text = "${state.toUnit.name} (${state.toUnit.symbol})",
@@ -354,11 +354,11 @@ fun UnitConverterScreen(
                         .fillMaxWidth()
                         .height(300.dp)
                 ) {
-                    items(unitsList) { item ->
+                    items(unitsList, key = { it.symbol + it.name }) { item ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(CircleShape)
                                 .clickable {
                                     if (target == "FROM") {
                                         viewModel.setFromUnit(item)
@@ -367,7 +367,7 @@ fun UnitConverterScreen(
                                     }
                                     unitPickerTarget = null
                                 }
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {

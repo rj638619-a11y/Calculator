@@ -18,8 +18,102 @@ enum class ThemeMode(
     val buttonFuncColor: Color,
     val buttonActionColor: Color,
     val textPrimary: Color,
-    val textSecondary: Color
+    val textSecondary: Color,
+    val isLight: Boolean = false
 ) {
+    ONE_UI_MINT(
+        title = "One UI Mint",
+        description = "Samsung style sleek dark slate with vivid mint green",
+        primaryAccent = Color(0xFF00D09C),
+        secondaryAccent = Color(0xFF05B98A),
+        tertiaryAccent = Color(0xFF64E2BD),
+        surfaceGlass = Color(0x33101820),
+        surfaceGlassLight = Color(0x4D1A2530),
+        borderGlass = Color(0x5500D09C),
+        backgroundColors = listOf(
+            Color(0xFF0B1015),
+            Color(0xFF101922),
+            Color(0xFF14222D),
+            Color(0xFF0A1218)
+        ),
+        buttonNumberColor = Color(0x2E1E2B38),
+        buttonOpColor = Color(0x3800D09C),
+        buttonFuncColor = Color(0x2E2A3C4D),
+        buttonActionColor = Color(0x4DFF5252),
+        textPrimary = Color(0xFFFFFFFF),
+        textSecondary = Color(0xFF90A4AE)
+    ),
+
+    IOS_DARK(
+        title = "iOS Dark",
+        description = "Iconic Apple iOS calculator with vibrant orange & titanium",
+        primaryAccent = Color(0xFFFF9F0A),
+        secondaryAccent = Color(0xFFFFB340),
+        tertiaryAccent = Color(0xFFFFD60A),
+        surfaceGlass = Color(0x331C1C1E),
+        surfaceGlassLight = Color(0x4D2C2C2E),
+        borderGlass = Color(0x55FF9F0A),
+        backgroundColors = listOf(
+            Color(0xFF000000),
+            Color(0xFF0D0D0E),
+            Color(0xFF151517),
+            Color(0xFF050505)
+        ),
+        buttonNumberColor = Color(0x4D333333),
+        buttonOpColor = Color(0xE6FF9F0A),
+        buttonFuncColor = Color(0x4DA5A5A5),
+        buttonActionColor = Color(0x4DA5A5A5),
+        textPrimary = Color(0xFFFFFFFF),
+        textSecondary = Color(0xFFA5A5A5)
+    ),
+
+    IOS_LIGHT(
+        title = "iOS Light",
+        description = "Clean minimalist light aesthetic with vibrant orange",
+        primaryAccent = Color(0xFFFF9500),
+        secondaryAccent = Color(0xFFFF5E3A),
+        tertiaryAccent = Color(0xFFFF851B),
+        surfaceGlass = Color(0x33E5E5EA),
+        surfaceGlassLight = Color(0x4DF2F2F7),
+        borderGlass = Color(0x338E8E93),
+        backgroundColors = listOf(
+            Color(0xFFF2F2F7),
+            Color(0xFFE5E5EA),
+            Color(0xFFD1D1D6),
+            Color(0xFFF9F9FB)
+        ),
+        buttonNumberColor = Color(0x66FFFFFF),
+        buttonOpColor = Color(0xE6FF9500),
+        buttonFuncColor = Color(0x4DD1D1D6),
+        buttonActionColor = Color(0x4DFF3B30),
+        textPrimary = Color(0xFF000000),
+        textSecondary = Color(0xFF6C6C70),
+        isLight = true
+    ),
+
+    AMOLED_STEALTH(
+        title = "AMOLED Stealth",
+        description = "Ultra minimalist pitch black with ice cyan highlights",
+        primaryAccent = Color(0xFF00F0FF),
+        secondaryAccent = Color(0xFF00B4D8),
+        tertiaryAccent = Color(0xFF70E000),
+        surfaceGlass = Color(0x220A0A0A),
+        surfaceGlassLight = Color(0x44141414),
+        borderGlass = Color(0x4400F0FF),
+        backgroundColors = listOf(
+            Color(0xFF000000),
+            Color(0xFF030303),
+            Color(0xFF080808),
+            Color(0xFF010101)
+        ),
+        buttonNumberColor = Color(0x33181818),
+        buttonOpColor = Color(0x3300F0FF),
+        buttonFuncColor = Color(0x28262626),
+        buttonActionColor = Color(0x4DFF3366),
+        textPrimary = Color(0xFFFAFAFA),
+        textSecondary = Color(0xFF888888)
+    ),
+
     AURORA(
         title = "Aurora",
         description = "Northern lights emerald, cyan & deep purple",
@@ -87,6 +181,52 @@ enum class ThemeMode(
         buttonActionColor = Color(0x4DF43F5E),
         textPrimary = Color(0xFFFFF1F2),
         textSecondary = Color(0xFFFDA4AF)
+    ),
+
+    CYBER_NEON(
+        title = "Cyber Neon",
+        description = "Electric lime & cyber yellow with obsidian matrix",
+        primaryAccent = Color(0xFFCCFF00),
+        secondaryAccent = Color(0xFF99FF00),
+        tertiaryAccent = Color(0xFF00FFA3),
+        surfaceGlass = Color(0x33121A0F),
+        surfaceGlassLight = Color(0x4D1D2C19),
+        borderGlass = Color(0x55CCFF00),
+        backgroundColors = listOf(
+            Color(0xFF080D06),
+            Color(0xFF0F190D),
+            Color(0xFF172412),
+            Color(0xFF060904)
+        ),
+        buttonNumberColor = Color(0x2E1C2B18),
+        buttonOpColor = Color(0x40CCFF00),
+        buttonFuncColor = Color(0x3300FFA3),
+        buttonActionColor = Color(0x4DFF0055),
+        textPrimary = Color(0xFFFFFFFF),
+        textSecondary = Color(0xFFCCFF88)
+    ),
+
+    NORDIC_LILAC(
+        title = "Nordic Lilac",
+        description = "Pastel lavender, soft periwinkle & dreamy rose",
+        primaryAccent = Color(0xFFC4B5FD),
+        secondaryAccent = Color(0xFFA78BFA),
+        tertiaryAccent = Color(0xFFF472B6),
+        surfaceGlass = Color(0x331E1B2E),
+        surfaceGlassLight = Color(0x4D2D2745),
+        borderGlass = Color(0x55C4B5FD),
+        backgroundColors = listOf(
+            Color(0xFF110E1C),
+            Color(0xFF1B162B),
+            Color(0xFF251E3C),
+            Color(0xFF130F20)
+        ),
+        buttonNumberColor = Color(0x2E2C2644),
+        buttonOpColor = Color(0x40C4B5FD),
+        buttonFuncColor = Color(0x33A78BFA),
+        buttonActionColor = Color(0x4DFB7185),
+        textPrimary = Color(0xFFFAF5FF),
+        textSecondary = Color(0xFFDDD6FE)
     ),
 
     MIDNIGHT(

@@ -2,7 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.SquareFoot
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -73,26 +75,32 @@ fun LiquidGlassNavBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(theme.surfaceGlassLight.copy(alpha = 0.5f))
+                .graphicsLayer {
+                    clip = true
+                    shape = CircleShape
+                }
+                .clip(CircleShape)
+                .background(theme.surfaceGlass)
+                .background(Color.White.copy(alpha = 0.12f))
                 .border(
                     width = 1.dp,
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            theme.borderGlass.copy(alpha = 0.5f),
-                            Color.White.copy(alpha = 0.1f),
-                            theme.borderGlass.copy(alpha = 0.3f)
+                            Color.White.copy(alpha = 0.25f),
+                            theme.borderGlass.copy(alpha = 0.25f),
+                            Color.White.copy(alpha = 0.12f)
                         )
                     ),
-                    shape = RoundedCornerShape(28.dp)
+                    shape = CircleShape
                 )
                 .drawBehind {
-                    // Top specular highlight
+                    // Specular top light
+                    val strokeWidth = 1.dp.toPx()
                     drawLine(
-                        color = Color.White.copy(alpha = 0.25f),
-                        start = Offset(24.dp.toPx(), 1.dp.toPx()),
-                        end = Offset(size.width - 24.dp.toPx(), 1.dp.toPx()),
-                        strokeWidth = 1.dp.toPx()
+                        color = Color.White.copy(alpha = 0.35f),
+                        start = Offset(24.dp.toPx(), strokeWidth),
+                        end = Offset(size.width - 24.dp.toPx(), strokeWidth),
+                        strokeWidth = strokeWidth
                     )
                 }
                 .padding(horizontal = 6.dp, vertical = 6.dp)
@@ -105,13 +113,19 @@ fun LiquidGlassNavBar(
                 AppNavTab.values().forEach { tab ->
                     val isSelected = tab == selectedTab
 
+                    val animatedScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.05f else 1.0f,
+                        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium),
+                        label = "tabScale"
+                    )
+
                     val animatedIconTint by animateColorAsState(
                         targetValue = if (isSelected) theme.primaryAccent else theme.textSecondary.copy(alpha = 0.7f),
                         label = "tabIconTint"
                     )
 
                     val animatedBgColor by animateColorAsState(
-                        targetValue = if (isSelected) theme.primaryAccent.copy(alpha = 0.2f) else Color.Transparent,
+                        targetValue = if (isSelected) theme.primaryAccent.copy(alpha = 0.22f) else Color.Transparent,
                         label = "tabBgColor"
                     )
 
@@ -119,12 +133,16 @@ fun LiquidGlassNavBar(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = animatedScale
+                                scaleY = animatedScale
+                            }
                             .testTag("nav_tab_${tab.name.lowercase()}")
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(CircleShape)
                             .background(animatedBgColor)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
+                                indication = ripple(color = theme.primaryAccent.copy(alpha = 0.3f)),
                                 onClick = {
                                     if (selectedTab != tab) {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -132,7 +150,7 @@ fun LiquidGlassNavBar(
                                     }
                                 }
                             )
-                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Icon(
                             imageVector = tab.icon,
@@ -152,3 +170,4 @@ fun LiquidGlassNavBar(
         }
     }
 }
+
