@@ -12,9 +12,7 @@ import java.util.concurrent.TimeUnit
 class CurrencyRepository {
 
     private val apiService: CurrencyApiService by lazy {
-        val moshi = Moshi.Builder()
-            .addLast(KotlinJsonAdapterFactory())
-            .build()
+        val moshi = Moshi.Builder().build()
 
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(8, TimeUnit.SECONDS)
