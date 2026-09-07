@@ -1,5 +1,6 @@
 package com.example.ui.theme
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -87,39 +88,71 @@ fun LiquidGlassBackground(
         label = "pulseGlow"
     )
 
-    // Dynamic shifting colors based on active theme
-    val orb1 = theme.secondaryAccent
-    val orb2 = theme.primaryAccent
-    val orb3 = theme.tertiaryAccent
+    // Smooth color transitions when theme changes
+    val animatedOrb1 by animateColorAsState(
+        targetValue = theme.secondaryAccent,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "animatedOrb1"
+    )
+    val animatedOrb2 by animateColorAsState(
+        targetValue = theme.primaryAccent,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "animatedOrb2"
+    )
+    val animatedOrb3 by animateColorAsState(
+        targetValue = theme.tertiaryAccent,
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "animatedOrb3"
+    )
 
     val (dynamicOrb1Color, dynamicOrb2Color, dynamicOrb3Color) = when {
         colorShiftPhase < 1f -> {
             val frac = colorShiftPhase
             Triple(
-                lerpColor(orb1, orb2, frac),
-                lerpColor(orb2, orb3, frac),
-                lerpColor(orb3, orb1, frac)
+                lerpColor(animatedOrb1, animatedOrb2, frac),
+                lerpColor(animatedOrb2, animatedOrb3, frac),
+                lerpColor(animatedOrb3, animatedOrb1, frac)
             )
         }
         colorShiftPhase < 2f -> {
             val frac = colorShiftPhase - 1f
             Triple(
-                lerpColor(orb2, orb3, frac),
-                lerpColor(orb3, orb1, frac),
-                lerpColor(orb1, orb2, frac)
+                lerpColor(animatedOrb2, animatedOrb3, frac),
+                lerpColor(animatedOrb3, animatedOrb1, frac),
+                lerpColor(animatedOrb1, animatedOrb2, frac)
             )
         }
         else -> {
             val frac = colorShiftPhase - 2f
             Triple(
-                lerpColor(orb3, orb1, frac),
-                lerpColor(orb1, orb2, frac),
-                lerpColor(orb2, orb3, frac)
+                lerpColor(animatedOrb3, animatedOrb1, frac),
+                lerpColor(animatedOrb1, animatedOrb2, frac),
+                lerpColor(animatedOrb2, animatedOrb3, frac)
             )
         }
     }
 
-    val bgColors = theme.backgroundColors
+    val animatedBg0 by animateColorAsState(
+        targetValue = theme.backgroundColors.getOrElse(0) { theme.backgroundColors.firstOrNull() ?: Color.Black },
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "animatedBg0"
+    )
+    val animatedBg1 by animateColorAsState(
+        targetValue = theme.backgroundColors.getOrElse(1) { theme.backgroundColors.firstOrNull() ?: Color.Black },
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "animatedBg1"
+    )
+    val animatedBg2 by animateColorAsState(
+        targetValue = theme.backgroundColors.getOrElse(2) { theme.backgroundColors.firstOrNull() ?: Color.Black },
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "animatedBg2"
+    )
+    val animatedBg3 by animateColorAsState(
+        targetValue = theme.backgroundColors.getOrElse(3) { theme.backgroundColors.firstOrNull() ?: Color.Black },
+        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        label = "animatedBg3"
+    )
+    val bgColors = listOf(animatedBg0, animatedBg1, animatedBg2, animatedBg3)
 
     Box(
         modifier = modifier
