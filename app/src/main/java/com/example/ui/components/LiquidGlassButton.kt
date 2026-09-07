@@ -78,32 +78,32 @@ fun LiquidGlassButton(
         CalcButtonType.NUMBER -> Triple(
             theme.buttonNumberColor,
             theme.textPrimary,
-            Color.White.copy(alpha = 0.15f)
+            if (theme.isLight) Color.Black.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.15f)
         )
         CalcButtonType.OPERATOR -> Triple(
             theme.buttonOpColor,
-            theme.primaryAccent,
-            theme.primaryAccent.copy(alpha = 0.5f)
+            if (theme == ThemeMode.IOS_LIGHT) Color.White else theme.primaryAccent,
+            theme.primaryAccent.copy(alpha = if (theme.isLight) 0.35f else 0.5f)
         )
         CalcButtonType.FUNCTION -> Triple(
             theme.buttonFuncColor,
-            theme.tertiaryAccent,
-            theme.tertiaryAccent.copy(alpha = 0.4f)
+            if (theme.isLight) theme.primaryAccent else theme.tertiaryAccent,
+            if (theme.isLight) theme.primaryAccent.copy(alpha = 0.25f) else theme.tertiaryAccent.copy(alpha = 0.4f)
         )
         CalcButtonType.ACTION -> Triple(
             theme.buttonActionColor,
-            Color(0xFFFFD1DC),
-            Color(0x66FF5C8A)
+            if (theme.isLight) Color(0xFFDC2626) else Color(0xFFFFD1DC),
+            if (theme.isLight) Color(0x33DC2626) else Color(0x66FF5C8A)
         )
         CalcButtonType.EQUALS -> Triple(
-            theme.primaryAccent.copy(alpha = 0.85f),
-            Color(0xFF030712),
-            Color.White.copy(alpha = 0.5f)
+            theme.primaryAccent.copy(alpha = 0.95f),
+            if (theme.isLight) Color.White else Color(0xFF030712),
+            if (theme.isLight) theme.primaryAccent else Color.White.copy(alpha = 0.5f)
         )
         CalcButtonType.MEMORY -> Triple(
-            theme.surfaceGlassLight.copy(alpha = 0.35f),
+            theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.6f else 0.35f),
             theme.textSecondary,
-            Color.White.copy(alpha = 0.15f)
+            if (theme.isLight) Color.Black.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.15f)
         )
     }
 

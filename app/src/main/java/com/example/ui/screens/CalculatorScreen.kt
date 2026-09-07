@@ -40,11 +40,12 @@ import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -52,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,9 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -105,7 +105,7 @@ fun CalculatorScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // ----------------------------------------------------
-        // Top Minimal Status Bar: Mode, Memory, & Gesture Tip
+        // Top Minimal Status Bar: Mode, Memory, Quick Light/Dark Toggle
         // ----------------------------------------------------
         Row(
             modifier = Modifier
@@ -114,26 +114,73 @@ fun CalculatorScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // DEG / RAD Toggle Pill
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(theme.surfaceGlassLight.copy(alpha = 0.5f))
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.toggleAngleMode()
-                    }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .testTag("deg_rad_toggle"),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = if (state.angleMode == ExpressionEvaluator.AngleMode.DEG) "DEG" else "RAD",
-                    color = theme.primaryAccent,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
+                // DEG / RAD Toggle Pill
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.7f else 0.5f))
+                        .border(
+                            width = 0.5.dp,
+                            color = theme.borderGlass.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.toggleAngleMode()
+                        }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .testTag("deg_rad_toggle"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (state.angleMode == ExpressionEvaluator.AngleMode.DEG) "DEG" else "RAD",
+                        color = theme.primaryAccent,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+
+                // Instant Light / Dark Mode Quick Toggle Pill
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.7f else 0.5f))
+                        .border(
+                            width = 0.5.dp,
+                            color = theme.borderGlass.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.setTheme(theme.toggleLightDark())
+                        }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                        .testTag("quick_light_dark_toggle"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (theme.isLight) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = if (theme.isLight) "Switch to Dark Mode" else "Switch to Light Mode",
+                            tint = theme.primaryAccent,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = if (theme.isLight) "Light" else "Dark",
+                            color = theme.textPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
 
             // Memory Status Pill (if active)
@@ -153,8 +200,8 @@ fun CalculatorScreen(
                 }
             } else {
                 Text(
-                    text = "Swipe display to backspace",
-                    color = theme.textSecondary.copy(alpha = 0.45f),
+                    text = "Swipe to backspace",
+                    color = theme.textSecondary.copy(alpha = 0.55f),
                     fontSize = 11.sp,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
@@ -174,7 +221,7 @@ fun CalculatorScreen(
                 ) {
                     Text(
                         text = "Copied!",
-                        color = Color.Black,
+                        color = if (theme.isLight) Color.White else Color.Black,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -225,7 +272,7 @@ fun CalculatorScreen(
                         }
                     )
                 },
-            highlightIntensity = 0.5f,
+            highlightIntensity = if (theme.isLight) 0.3f else 0.5f,
             shape = RoundedCornerShape(28.dp)
         ) {
             Column(
@@ -242,7 +289,7 @@ fun CalculatorScreen(
                 ) {
                     Text(
                         text = if (state.isScientificExpanded) "SCIENTIFIC" else "STANDARD",
-                        color = theme.textSecondary.copy(alpha = 0.5f),
+                        color = theme.textSecondary.copy(alpha = 0.6f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 1.2.sp
@@ -267,7 +314,7 @@ fun CalculatorScreen(
                             Icon(
                                 imageVector = Icons.Default.ContentCopy,
                                 contentDescription = "Copy result",
-                                tint = theme.textSecondary.copy(alpha = 0.7f),
+                                tint = theme.textSecondary.copy(alpha = 0.8f),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -293,7 +340,7 @@ fun CalculatorScreen(
 
                     Text(
                         text = if (state.expression.isEmpty()) "0" else state.expression,
-                        color = if (state.isError) Color(0xFFFF6B6B) else theme.textPrimary,
+                        color = if (state.isError) Color(0xFFDC2626) else theme.textPrimary,
                         fontSize = expFontSize,
                         fontWeight = FontWeight.Light,
                         fontFamily = FontFamily.SansSerif,
@@ -343,7 +390,7 @@ fun CalculatorScreen(
                         } else if (state.isError) {
                             Text(
                                 text = targetText,
-                                color = Color(0xFFFF5252),
+                                color = Color(0xFFDC2626),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -358,7 +405,7 @@ fun CalculatorScreen(
                         } else {
                             Text(
                                 text = targetText,
-                                color = theme.primaryAccent.copy(alpha = 0.8f),
+                                color = theme.primaryAccent.copy(alpha = if (theme.isLight) 0.9f else 0.8f),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.testTag("calc_live_result")
@@ -384,8 +431,8 @@ fun CalculatorScreen(
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(
-                        if (state.isScientificExpanded) theme.primaryAccent.copy(alpha = 0.35f)
-                        else theme.surfaceGlassLight.copy(alpha = 0.45f)
+                        if (state.isScientificExpanded) theme.primaryAccent.copy(alpha = if (theme.isLight) 0.25f else 0.35f)
+                        else theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.65f else 0.45f)
                     )
                     .clickable {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -421,7 +468,7 @@ fun CalculatorScreen(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+                    .background(theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.65f else 0.4f))
             ) {
                 Icon(
                     imageVector = Icons.Default.SwapHoriz,
@@ -440,7 +487,7 @@ fun CalculatorScreen(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+                    .background(theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.65f else 0.4f))
                     .testTag("quick_history_btn")
             ) {
                 Icon(
@@ -460,7 +507,7 @@ fun CalculatorScreen(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+                    .background(theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.65f else 0.4f))
                     .testTag("theme_picker_btn")
             ) {
                 Icon(
@@ -480,7 +527,7 @@ fun CalculatorScreen(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(theme.surfaceGlassLight.copy(alpha = 0.4f))
+                    .background(theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.65f else 0.4f))
                     .testTag("toolbar_backspace_btn")
             ) {
                 Icon(
@@ -658,7 +705,6 @@ fun CalculatorScreen(
                 LiquidGlassButton(
                     text = "( )",
                     onClick = {
-                        // Intelligent parentheses insertion
                         val openCount = state.expression.count { it == '(' }
                         val closeCount = state.expression.count { it == ')' }
                         if (openCount > closeCount && state.expression.lastOrNull()?.isDigit() == true) {
@@ -858,9 +904,11 @@ fun CalculatorScreen(
     }
 
     // ----------------------------------------------------
-    // Theme Selector Dialog / Bottom Sheet
+    // Modern Theme Selector Dialog (with Light/Dark Filter Tabs & Toggle)
     // ----------------------------------------------------
     if (showThemeDialog) {
+        var selectedFilterIndex by remember { mutableIntStateOf(0) } // 0: All, 1: Dark, 2: Light
+
         Dialog(onDismissRequest = { showThemeDialog = false }) {
             LiquidGlassCard(
                 theme = theme,
@@ -868,24 +916,33 @@ fun CalculatorScreen(
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
                 shape = RoundedCornerShape(32.dp),
-                highlightIntensity = 0.5f
+                highlightIntensity = if (theme.isLight) 0.3f else 0.5f
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(20.dp)
                 ) {
+                    // Header with Quick Light/Dark Switch
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Theme Colors",
-                            color = theme.textPrimary,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column {
+                            Text(
+                                text = "Theme Presets",
+                                color = theme.textPrimary,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Select colors & appearance",
+                                color = theme.textSecondary.copy(alpha = 0.7f),
+                                fontSize = 12.sp
+                            )
+                        }
+
                         IconButton(
                             onClick = { showThemeDialog = false },
                             modifier = Modifier.size(32.dp)
@@ -900,25 +957,73 @@ fun CalculatorScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // Filter Mode Tabs: [ All ], [ 🌙 Dark ], [ ☀️ Light ]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(CircleShape)
+                            .background(theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.7f else 0.4f))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf("All (18)", "🌙 Dark", "☀️ Light").forEachIndexed { index, label ->
+                            val isTabSelected = selectedFilterIndex == index
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isTabSelected) theme.primaryAccent
+                                        else Color.Transparent
+                                    )
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        selectedFilterIndex = index
+                                    }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (isTabSelected) {
+                                        if (theme.isLight) Color.White else Color.Black
+                                    } else theme.textSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isTabSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val filteredThemes = ThemeMode.values().filter { mode ->
+                        when (selectedFilterIndex) {
+                            1 -> !mode.isLight
+                            2 -> mode.isLight
+                            else -> true
+                        }
+                    }
+
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(380.dp),
+                            .height(360.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(ThemeMode.values(), key = { it.name }) { mode ->
+                        items(filteredThemes, key = { it.name }) { mode ->
                             val isSelected = mode == state.theme
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(
-                                        if (isSelected) theme.primaryAccent.copy(alpha = 0.20f)
-                                        else theme.surfaceGlassLight.copy(alpha = 0.35f)
+                                        if (isSelected) theme.primaryAccent.copy(alpha = if (theme.isLight) 0.18f else 0.22f)
+                                        else theme.surfaceGlassLight.copy(alpha = if (theme.isLight) 0.6f else 0.35f)
                                     )
                                     .border(
                                         width = if (isSelected) 1.5.dp else 0.5.dp,
-                                        color = if (isSelected) mode.primaryAccent else Color.White.copy(alpha = 0.1f),
+                                        color = if (isSelected) mode.primaryAccent else (if (theme.isLight) Color.Black.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.1f)),
                                         shape = RoundedCornerShape(20.dp)
                                     )
                                     .clickable {
@@ -931,17 +1036,29 @@ fun CalculatorScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = mode.title,
-                                        color = if (isSelected) mode.primaryAccent else theme.textPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (mode.isLight) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                            contentDescription = null,
+                                            tint = if (isSelected) mode.primaryAccent else theme.textSecondary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = mode.title,
+                                            color = if (isSelected) mode.primaryAccent else theme.textPrimary,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                     Text(
                                         text = mode.description,
-                                        color = theme.textSecondary.copy(alpha = 0.7f),
+                                        color = theme.textSecondary.copy(alpha = 0.75f),
                                         fontSize = 11.sp,
-                                        maxLines = 1
+                                        maxLines = 1,
+                                        modifier = Modifier.padding(top = 2.dp)
                                     )
                                 }
 
@@ -955,18 +1072,21 @@ fun CalculatorScreen(
                                             .size(16.dp)
                                             .clip(CircleShape)
                                             .background(mode.primaryAccent)
+                                            .border(0.5.dp, Color.Black.copy(alpha = 0.15f), CircleShape)
                                     )
                                     Box(
                                         modifier = Modifier
                                             .size(16.dp)
                                             .clip(CircleShape)
                                             .background(mode.secondaryAccent)
+                                            .border(0.5.dp, Color.Black.copy(alpha = 0.15f), CircleShape)
                                     )
                                     Box(
                                         modifier = Modifier
                                             .size(16.dp)
                                             .clip(CircleShape)
                                             .background(mode.backgroundColors.first())
+                                            .border(0.5.dp, Color.Black.copy(alpha = 0.15f), CircleShape)
                                     )
 
                                     if (isSelected) {

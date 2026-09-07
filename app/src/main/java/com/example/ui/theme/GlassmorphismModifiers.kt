@@ -137,12 +137,12 @@ fun LiquidGlassBackground(
                     )
                 )
 
-                // Shifting Orb 1: Purple / Indigo Glow (Top-Left / Central Drift)
+                // Shifting Orb 1: Glow (Top-Left / Central Drift)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb1Color.copy(alpha = 0.32f * pulseGlow),
-                            dynamicOrb1Color.copy(alpha = 0.10f * pulseGlow),
+                            dynamicOrb1Color.copy(alpha = (if (theme.isLight) 0.18f else 0.32f) * pulseGlow),
+                            dynamicOrb1Color.copy(alpha = (if (theme.isLight) 0.05f else 0.10f) * pulseGlow),
                             Color.Transparent
                         ),
                         center = Offset(w * (0.2f + 0.6f * shiftX), h * (0.15f + 0.35f * shiftY)),
@@ -150,12 +150,12 @@ fun LiquidGlassBackground(
                     )
                 )
 
-                // Shifting Orb 2: Blue / Teal Glow (Bottom-Right / Upward Drift)
+                // Shifting Orb 2: Glow (Bottom-Right / Upward Drift)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb2Color.copy(alpha = 0.28f),
-                            dynamicOrb2Color.copy(alpha = 0.08f),
+                            dynamicOrb2Color.copy(alpha = if (theme.isLight) 0.16f else 0.28f),
+                            dynamicOrb2Color.copy(alpha = if (theme.isLight) 0.04f else 0.08f),
                             Color.Transparent
                         ),
                         center = Offset(w * (0.85f - 0.55f * shiftY), h * (0.65f + 0.25f * shiftX)),
@@ -163,11 +163,11 @@ fun LiquidGlassBackground(
                     )
                 )
 
-                // Shifting Orb 3: Cyan / Teal Accent Glow (Bottom-Center Pulse)
+                // Shifting Orb 3: Accent Glow (Bottom-Center Pulse)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb3Color.copy(alpha = 0.22f * pulseGlow),
+                            dynamicOrb3Color.copy(alpha = (if (theme.isLight) 0.12f else 0.22f) * pulseGlow),
                             Color.Transparent
                         ),
                         center = Offset(w * (0.5f + 0.3f * shiftX), h * (0.9f - 0.4f * shiftY)),
