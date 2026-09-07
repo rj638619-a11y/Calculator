@@ -2,7 +2,6 @@
 # Optimized Production ProGuard & R8 Configuration
 # ===================================================================
 
-# Optimization & Obfuscation Settings
 -dontusemixedcaseclassnames
 -verbose
 
@@ -10,7 +9,7 @@
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable,RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
 
 # -------------------------------------------------------------------
-# Core Android Application Components
+# Android Core Components & Activities
 # -------------------------------------------------------------------
 -keep public class * extends android.app.Activity
 -keep public class * extends android.app.Application
@@ -36,51 +35,60 @@
 }
 
 # -------------------------------------------------------------------
-# Jetpack Compose & Material Components
+# Kotlin Enums (CRITICAL: Prevents crash in Enum.valueOf() / Theme / Tabs)
 # -------------------------------------------------------------------
--keepclassmembers class androidx.compose.ui.** {
-    public <methods>;
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+    public static ** entries;
+    public ** name();
+    public int ordinal();
+    <fields>;
 }
--keep class androidx.compose.material3.** { *; }
--keep class androidx.compose.material.** { *; }
--dontwarn androidx.compose.**
+-keep enum com.example.** { *; }
 
 # -------------------------------------------------------------------
-# Navigation & ViewModel Lifecycle
+# AndroidX Lifecycle, ViewModels & State
 # -------------------------------------------------------------------
 -keep class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
     public <init>(...);
 }
 -keep class * extends androidx.lifecycle.AndroidViewModel {
+    <init>(...);
     public <init>(...);
 }
--keep class androidx.navigation.** { *; }
+-keep class * extends androidx.lifecycle.ViewModelProvider$Factory { *; }
+-keep class com.example.ui.viewmodel.** {
+    <init>(...);
+    public <init>(...);
+    *;
+}
 
 # -------------------------------------------------------------------
-# Room Database & SQLite
+# Room Database & SQLite (CRITICAL: Reflection instantiates AppDatabase_Impl)
 # -------------------------------------------------------------------
--keep class * extends androidx.room.RoomDatabase
--keepclassmembers class * extends androidx.room.RoomDatabase {
+-keep class androidx.room.** { *; }
+-dontwarn androidx.room.**
+-keep class * extends androidx.room.RoomDatabase {
     <init>();
     *;
 }
 -keep class **.*_Impl {
-    public <init>();
+    <init>();
     *;
 }
 -keep @androidx.room.Entity class * { *; }
+-keepclassmembers @androidx.room.Entity class * { *; }
 -keep @androidx.room.Dao interface * { *; }
+-keepclassmembers @androidx.room.Dao interface * { *; }
 -keep class * extends androidx.sqlite.db.SupportSQLiteOpenHelper$Factory {
     <init>(...);
 }
+-keep class com.example.data.local.** { *; }
 
 # -------------------------------------------------------------------
-# DataStore & Preferences
-# -------------------------------------------------------------------
--keep class androidx.datastore.** { *; }
-
-# -------------------------------------------------------------------
-# Retrofit, OkHttp & Moshi / Gson / Kotlin Serialization
+# Retrofit, OkHttp & Moshi (Network & JSON Parsing)
 # -------------------------------------------------------------------
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
@@ -95,27 +103,62 @@
 -dontwarn com.squareup.moshi.**
 -keep class com.squareup.moshi.** { *; }
 -keep class * implements com.squareup.moshi.JsonAdapter { *; }
+-keep class * extends com.squareup.moshi.JsonAdapter {
+    <init>(...);
+    *;
+}
 -keepclassmembers class * {
     @com.squareup.moshi.Json <fields>;
+    @com.squareup.moshi.JsonClass <fields>;
 }
+-keep @com.squareup.moshi.JsonClass class * { *; }
+-keep class com.example.data.remote.** { *; }
 
+# -------------------------------------------------------------------
+# Kotlin Coroutines & Main Dispatcher (CRITICAL for ServiceLoader)
+# -------------------------------------------------------------------
+-keepclassmembers class kotlinx.coroutines.** {
+    volatile <fields>;
+}
+-keep class kotlinx.coroutines.android.AndroidDispatcherFactory { *; }
+-keep class kotlinx.coroutines.android.AndroidExceptionPreHandler { *; }
+-keep class kotlinx.coroutines.internal.MainDispatcherFactory { *; }
+-keep class * implements kotlinx.coroutines.internal.MainDispatcherFactory { *; }
+-dontwarn kotlinx.coroutines.**
+-dontwarn kotlin.reflect.jvm.internal.**
+
+# -------------------------------------------------------------------
+# Jetpack Compose & Material 3
+# -------------------------------------------------------------------
+-keepclassmembers class androidx.compose.ui.** {
+    public <methods>;
+}
+-keep class androidx.compose.material3.** { *; }
+-keep class androidx.compose.material.** { *; }
+-keep class androidx.compose.animation.** { *; }
+-keep class androidx.compose.runtime.** { *; }
+-dontwarn androidx.compose.**
+
+# -------------------------------------------------------------------
+# App Engine, Calculators, State & Theme Models
+# -------------------------------------------------------------------
+-keep class com.example.engine.** { *; }
+-keep class com.example.ui.theme.** { *; }
+-keep class com.example.ui.components.** { *; }
+
+# -------------------------------------------------------------------
+# DataStore & Preferences
+# -------------------------------------------------------------------
+-keep class androidx.datastore.** { *; }
+
+# -------------------------------------------------------------------
+# Gson & Kotlinx Serialization
+# -------------------------------------------------------------------
 -keepclassmembers class * {
     @com.google.gson.annotations.SerializedName <fields>;
 }
-
--keepattributes *Annotation*, ElementType, RetentionPolicy
 -keepclassmembers class * {
     @kotlinx.serialization.Serializable <fields>;
-}
-
-# Preserve app data models used by JSON parsing and DB persistence
--keepclassmembers class com.example.data.remote.** {
-    <fields>;
-    <methods>;
-}
--keepclassmembers class com.example.data.local.** {
-    <fields>;
-    <methods>;
 }
 
 # -------------------------------------------------------------------
@@ -146,12 +189,4 @@
 # -------------------------------------------------------------------
 -keep class androidx.biometric.** { *; }
 
-# -------------------------------------------------------------------
-# Kotlin Coroutines & Reflection
-# -------------------------------------------------------------------
--keepclassmembers class kotlinx.coroutines.** {
-    volatile <fields>;
-}
--dontwarn kotlinx.coroutines.**
--keepclassmembers class kotlin.reflect.jvm.internal.** { *; }
 
