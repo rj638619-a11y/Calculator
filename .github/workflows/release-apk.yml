@@ -106,30 +106,6 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
-      - name: Prepare APK release asset
-        id: prepare_asset
-        run: |
-          REPO_RAW="${{ github.repository }}"
-          REPO_NAME=$(echo "$REPO_RAW" | awk -F'/' '{print $2}' | tr -cd '[:alnum:]-_')
-          if [ -z "$REPO_NAME" ]; then
-            REPO_NAME="smart-calculator"
-          fi
-          
-          ASSET_NAME="${REPO_NAME}-release-build-${{ github.run_number }}.apk"
-          TEMP_ASSET_DIR="${RUNNER_TEMP}/release-asset"
-          mkdir -p "$TEMP_ASSET_DIR"
-          
-          cp "app/build/outputs/apk/release/app-release.apk" "$TEMP_ASSET_DIR/$ASSET_NAME"
-          
-          if [ ! -f "$TEMP_ASSET_DIR/$ASSET_NAME" ] || [ ! -s "$TEMP_ASSET_DIR/$ASSET_NAME" ]; then
-            echo "::error::Failed to prepare release asset."
-            exit 1
-          fi
-          
-          echo "asset_path=$TEMP_ASSET_DIR/$ASSET_NAME" >> "$GITHUB_OUTPUT"
-          echo "asset_name=$ASSET_NAME" >> "$GITHUB_OUTPUT"
-          echo "Release asset prepared: $TEMP_ASSET_DIR/$ASSET_NAME"
-
       - name: Publish APK to GitHub Releases
         id: publish_release
         continue-on-error: true
@@ -138,11 +114,9 @@ jobs:
         run: |
           gh --version
           
-          ASSET_PATH="${{ steps.prepare_asset.outputs.asset_path }}"
-          ASSET_NAME="${{ steps.prepare_asset.outputs.asset_name }}"
-          
-          if [ ! -f "$ASSET_PATH" ] || [ ! -s "$ASSET_PATH" ]; then
-            echo "::error::Release asset file is missing or empty: $ASSET_PATH"
+          APK_PATH="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK_PATH" ] || [ ! -s "$APK_PATH" ]; then
+            echo "::error::Release APK file is missing or empty: $APK_PATH"
             exit 1
           fi
           
@@ -158,7 +132,6 @@ jobs:
             echo "- **Build Run Number:** #${{ github.run_number }}"
             echo "- **Build Attempt:** #${{ github.run_attempt }}"
             echo "- **Source Commit:** \`${{ github.sha }}\`"
-            echo "- **Release Asset:** \`${ASSET_NAME}\`"
             echo ""
             echo "#### 🚀 Optimization Highlights:"
             echo "- **R8 Code Shrinking & Obfuscation**: Enabled"
@@ -168,7 +141,7 @@ jobs:
           } > "$NOTES_FILE"
           
           echo "Creating GitHub Release with tag: $TAG"
-          gh release create "$TAG" "$ASSET_PATH" \
+          gh release create "$TAG" "$APK_PATH" \
             --target "${{ github.sha }}" \
             --title "$TITLE" \
             --notes-file "$NOTES_FILE" \
@@ -183,7 +156,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           RELEASE_OUTCOME="${{ steps.publish_release.outcome }}"
-          ASSET_NAME="${{ steps.prepare_asset.outputs.asset_name }}"
           TAG="release-${{ github.run_number }}-${{ github.run_attempt }}"
           TITLE="Release APK #${{ github.run_number }}"
           
@@ -195,7 +167,6 @@ jobs:
             echo "Release Tag: $TAG"
             echo "Release Title: $TITLE"
             echo "Release URL: $RELEASE_URL"
-            echo "APK Asset Name: $ASSET_NAME"
             
             {
               echo "## 🚀 Production Release APK Published Successfully"
@@ -204,7 +175,6 @@ jobs:
               echo ""
               echo "- **Release:** [$TITLE]($RELEASE_URL)"
               echo "- **Tag:** \`$TAG\`"
-              echo "- **Direct Download:** [$ASSET_NAME]($RELEASE_URL)"
               echo ""
               echo "You can download the optimized APK directly from the release **Assets** section."
               echo ""
@@ -223,3 +193,4 @@ jobs:
               echo "- You can download the APK directly from the **Artifacts** section of this workflow run."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
