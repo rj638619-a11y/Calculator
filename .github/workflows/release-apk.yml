@@ -149,29 +149,29 @@ jobs:
           TAG="release-${{ github.run_number }}-${{ github.run_attempt }}"
           TITLE="Release APK #${{ github.run_number }}"
           
-          NOTES=$(cat <<EOF
-### ⚡ Optimized Production Release APK
-
-This is an automatically generated, R8-optimized production release APK built by GitHub Actions.
-
-- **Build Run Number:** ${{ github.run_number }}
-- **Build Attempt:** ${{ github.run_attempt }}
-- **Source Commit:** \`${{ github.sha }}\`
-- **Release Asset:** \`${ASSET_NAME}\`
-
-#### 🚀 Optimization Highlights:
-- **R8 Code Shrinking & Obfuscation**: Enabled
-- **Resource Shrinking & Stripping**: Enabled
-- **Target OS Compatibility**: Android 8.0+ (API 24 to 36)
-- **Engine Performance**: Optimized for low-end devices and instant startup
-EOF
-)
-
+          NOTES_FILE="${RUNNER_TEMP}/release_notes.md"
+          {
+            echo "### ⚡ Optimized Production Release APK"
+            echo ""
+            echo "This is an automatically generated, R8-optimized production release APK built by GitHub Actions."
+            echo ""
+            echo "- **Build Run Number:** #${{ github.run_number }}"
+            echo "- **Build Attempt:** #${{ github.run_attempt }}"
+            echo "- **Source Commit:** \`${{ github.sha }}\`"
+            echo "- **Release Asset:** \`${ASSET_NAME}\`"
+            echo ""
+            echo "#### 🚀 Optimization Highlights:"
+            echo "- **R8 Code Shrinking & Obfuscation**: Enabled"
+            echo "- **Resource Shrinking & Stripping**: Enabled"
+            echo "- **Target OS Compatibility**: Android 8.0+ (API 24 to 36)"
+            echo "- **Engine Performance**: Optimized for low-end devices and instant startup"
+          } > "$NOTES_FILE"
+          
           echo "Creating GitHub Release with tag: $TAG"
           gh release create "$TAG" "$ASSET_PATH" \
             --target "${{ github.sha }}" \
             --title "$TITLE" \
-            --notes "$NOTES" \
+            --notes-file "$NOTES_FILE" \
             --latest
           
           echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"

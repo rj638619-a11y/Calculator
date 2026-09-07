@@ -149,28 +149,28 @@ jobs:
           TAG="debug-apk-build-${{ github.run_number }}-${{ github.run_attempt }}"
           TITLE="Debug APK Build #${{ github.run_number }}"
           
-          NOTES=$(cat <<EOF
-### 🤖 Android Debug Build
-
-This is an automatically generated debug APK built by GitHub Actions.
-
-- **Workflow Run:** #${{ github.run_number }}
-- **Attempt:** #${{ github.run_attempt }}
-- **Commit SHA:** \`${{ github.sha }}\`
-- **Asset Filename:** \`${ASSET_NAME}\`
-
-> ℹ️ **Notice:**
-> - This APK is intended for testing and development purposes.
-> - This is not a Google Play Store production release.
-> - The APK is signed only with a temporary debug keystore.
-EOF
-)
-
+          NOTES_FILE="${RUNNER_TEMP}/release_notes.md"
+          {
+            echo "### 🤖 Android Debug Build"
+            echo ""
+            echo "This is an automatically generated debug APK built by GitHub Actions."
+            echo ""
+            echo "- **Workflow Run:** #${{ github.run_number }}"
+            echo "- **Attempt:** #${{ github.run_attempt }}"
+            echo "- **Commit SHA:** \`${{ github.sha }}\`"
+            echo "- **Asset Filename:** \`${ASSET_NAME}\`"
+            echo ""
+            echo "> ℹ️ **Notice:**"
+            echo "> - This APK is intended for testing and development purposes."
+            echo "> - This is not a Google Play Store production release."
+            echo "> - The APK is signed only with a temporary debug keystore."
+          } > "$NOTES_FILE"
+          
           echo "Creating GitHub Release with tag: $TAG"
           gh release create "$TAG" "$ASSET_PATH" \
             --target "${{ github.sha }}" \
             --title "$TITLE" \
-            --notes "$NOTES" \
+            --notes-file "$NOTES_FILE" \
             --latest
           
           echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
