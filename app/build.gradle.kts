@@ -25,10 +25,17 @@ android {
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/release.keystore"
-      storeFile = file(keystorePath)
+      val customPath = System.getenv("KEYSTORE_PATH")
+      val releaseKeystore = file("${rootDir}/release.keystore")
+      val debugKeystore = file("${rootDir}/debug.keystore")
+      val selectedFile = when {
+        customPath != null && file(customPath).exists() -> file(customPath)
+        releaseKeystore.exists() -> releaseKeystore
+        else -> debugKeystore
+      }
+      storeFile = selectedFile
       storePassword = System.getenv("STORE_PASSWORD") ?: "android"
-      keyAlias = System.getenv("KEY_ALIAS") ?: "androidreleasekey"
+      keyAlias = System.getenv("KEY_ALIAS") ?: (if (selectedFile == releaseKeystore) "androidreleasekey" else "androiddebugkey")
       keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
     }
     create("debugConfig") {

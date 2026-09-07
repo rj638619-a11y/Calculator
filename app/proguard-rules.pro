@@ -6,7 +6,6 @@
 -repackageclasses ''
 -allowaccessmodification
 -dontusemixedcaseclassnames
--skipnonpubliclibraryclasses
 -verbose
 
 # Preserve essential annotations and attributes
