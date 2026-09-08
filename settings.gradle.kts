@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Smart Calculator"
+rootProject.name = "Calculator"
 
 include(":app")

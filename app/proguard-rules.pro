@@ -212,8 +212,9 @@
 -keep class com.example.data.remote.CurrencyApiResponse { *; }
 -keep class com.example.data.remote.CurrencyData { *; }
 -keep class com.example.data.remote.CurrencyInfo { *; }
--keepclassmembers class com.example.data.remote.** { *; }
+-keep class com.example.data.remote.** { *; }
 -keep class com.example.data.remote.*JsonAdapter { *; }
+-keepclassmembers class com.example.data.remote.** { *; }
 -keepclassmembers class * {
     @com.squareup.moshi.JsonClass <methods>;
 }
