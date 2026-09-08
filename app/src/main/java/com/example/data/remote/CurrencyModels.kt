@@ -12,6 +12,7 @@ data class CurrencyApiResponse(
     val rates: Map<String, Double>? = null
 )
 
+@JsonClass(generateAdapter = true)
 data class CurrencyInfo(
     val code: String,
     val name: String,
