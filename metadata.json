@@ -1,5 +1,5 @@
 {
-  "name": "Calculator",
+  "name": "Smart Calculator",
   "description": "Liquid glass smart calculator with basic and scientific calculation, live currency conversion, unit converter, date and tip tools, calculation history, and animated gradient themes.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

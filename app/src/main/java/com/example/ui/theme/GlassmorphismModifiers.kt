@@ -1,6 +1,5 @@
 package com.example.ui.theme
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -88,71 +87,39 @@ fun LiquidGlassBackground(
         label = "pulseGlow"
     )
 
-    // Smooth color transitions when theme changes
-    val animatedOrb1 by animateColorAsState(
-        targetValue = theme.secondaryAccent,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "animatedOrb1"
-    )
-    val animatedOrb2 by animateColorAsState(
-        targetValue = theme.primaryAccent,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "animatedOrb2"
-    )
-    val animatedOrb3 by animateColorAsState(
-        targetValue = theme.tertiaryAccent,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "animatedOrb3"
-    )
+    // Dynamic shifting colors based on active theme
+    val orb1 = theme.secondaryAccent
+    val orb2 = theme.primaryAccent
+    val orb3 = theme.tertiaryAccent
 
     val (dynamicOrb1Color, dynamicOrb2Color, dynamicOrb3Color) = when {
         colorShiftPhase < 1f -> {
             val frac = colorShiftPhase
             Triple(
-                lerpColor(animatedOrb1, animatedOrb2, frac),
-                lerpColor(animatedOrb2, animatedOrb3, frac),
-                lerpColor(animatedOrb3, animatedOrb1, frac)
+                lerpColor(orb1, orb2, frac),
+                lerpColor(orb2, orb3, frac),
+                lerpColor(orb3, orb1, frac)
             )
         }
         colorShiftPhase < 2f -> {
             val frac = colorShiftPhase - 1f
             Triple(
-                lerpColor(animatedOrb2, animatedOrb3, frac),
-                lerpColor(animatedOrb3, animatedOrb1, frac),
-                lerpColor(animatedOrb1, animatedOrb2, frac)
+                lerpColor(orb2, orb3, frac),
+                lerpColor(orb3, orb1, frac),
+                lerpColor(orb1, orb2, frac)
             )
         }
         else -> {
             val frac = colorShiftPhase - 2f
             Triple(
-                lerpColor(animatedOrb3, animatedOrb1, frac),
-                lerpColor(animatedOrb1, animatedOrb2, frac),
-                lerpColor(animatedOrb2, animatedOrb3, frac)
+                lerpColor(orb3, orb1, frac),
+                lerpColor(orb1, orb2, frac),
+                lerpColor(orb2, orb3, frac)
             )
         }
     }
 
-    val animatedBg0 by animateColorAsState(
-        targetValue = theme.backgroundColors.getOrElse(0) { theme.backgroundColors.firstOrNull() ?: Color.Black },
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "animatedBg0"
-    )
-    val animatedBg1 by animateColorAsState(
-        targetValue = theme.backgroundColors.getOrElse(1) { theme.backgroundColors.firstOrNull() ?: Color.Black },
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "animatedBg1"
-    )
-    val animatedBg2 by animateColorAsState(
-        targetValue = theme.backgroundColors.getOrElse(2) { theme.backgroundColors.firstOrNull() ?: Color.Black },
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "animatedBg2"
-    )
-    val animatedBg3 by animateColorAsState(
-        targetValue = theme.backgroundColors.getOrElse(3) { theme.backgroundColors.firstOrNull() ?: Color.Black },
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "animatedBg3"
-    )
-    val bgColors = listOf(animatedBg0, animatedBg1, animatedBg2, animatedBg3)
+    val bgColors = theme.backgroundColors
 
     Box(
         modifier = modifier
@@ -170,12 +137,12 @@ fun LiquidGlassBackground(
                     )
                 )
 
-                // Shifting Orb 1: Glow (Top-Left / Central Drift)
+                // Shifting Orb 1: Purple / Indigo Glow (Top-Left / Central Drift)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb1Color.copy(alpha = (if (theme.isLight) 0.18f else 0.32f) * pulseGlow),
-                            dynamicOrb1Color.copy(alpha = (if (theme.isLight) 0.05f else 0.10f) * pulseGlow),
+                            dynamicOrb1Color.copy(alpha = 0.32f * pulseGlow),
+                            dynamicOrb1Color.copy(alpha = 0.10f * pulseGlow),
                             Color.Transparent
                         ),
                         center = Offset(w * (0.2f + 0.6f * shiftX), h * (0.15f + 0.35f * shiftY)),
@@ -183,12 +150,12 @@ fun LiquidGlassBackground(
                     )
                 )
 
-                // Shifting Orb 2: Glow (Bottom-Right / Upward Drift)
+                // Shifting Orb 2: Blue / Teal Glow (Bottom-Right / Upward Drift)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb2Color.copy(alpha = if (theme.isLight) 0.16f else 0.28f),
-                            dynamicOrb2Color.copy(alpha = if (theme.isLight) 0.04f else 0.08f),
+                            dynamicOrb2Color.copy(alpha = 0.28f),
+                            dynamicOrb2Color.copy(alpha = 0.08f),
                             Color.Transparent
                         ),
                         center = Offset(w * (0.85f - 0.55f * shiftY), h * (0.65f + 0.25f * shiftX)),
@@ -196,11 +163,11 @@ fun LiquidGlassBackground(
                     )
                 )
 
-                // Shifting Orb 3: Accent Glow (Bottom-Center Pulse)
+                // Shifting Orb 3: Cyan / Teal Accent Glow (Bottom-Center Pulse)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb3Color.copy(alpha = (if (theme.isLight) 0.12f else 0.22f) * pulseGlow),
+                            dynamicOrb3Color.copy(alpha = 0.22f * pulseGlow),
                             Color.Transparent
                         ),
                         center = Offset(w * (0.5f + 0.3f * shiftX), h * (0.9f - 0.4f * shiftY)),

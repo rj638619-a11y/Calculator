@@ -126,43 +126,8 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     private val calculationRepository = CalculationRepository(db.calculationDao())
     private val currencyRepository = CurrencyRepository()
     private val clipboardManager = application.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    private val prefs = application.getSharedPreferences("smart_calc_settings", Context.MODE_PRIVATE)
 
-    private fun loadSavedState(): CalculatorUiState {
-        val themeName = prefs.getString("theme_mode", ThemeMode.AURORA.name) ?: ThemeMode.AURORA.name
-        val savedTheme = try { ThemeMode.valueOf(themeName) } catch (e: Exception) { ThemeMode.AURORA }
-
-        val angleName = prefs.getString("angle_mode", ExpressionEvaluator.AngleMode.DEG.name) ?: ExpressionEvaluator.AngleMode.DEG.name
-        val savedAngleMode = try { ExpressionEvaluator.AngleMode.valueOf(angleName) } catch (e: Exception) { ExpressionEvaluator.AngleMode.DEG }
-
-        val savedScientific = prefs.getBoolean("is_scientific_expanded", false)
-        val savedFromCurrency = prefs.getString("from_currency", "USD") ?: "USD"
-        val savedToCurrency = prefs.getString("to_currency", "EUR") ?: "EUR"
-
-        val categoryName = prefs.getString("unit_category", UnitCategory.LENGTH.name) ?: UnitCategory.LENGTH.name
-        val savedUnitCategory = try { UnitCategory.valueOf(categoryName) } catch (e: Exception) { UnitCategory.LENGTH }
-
-        val units = UnitConversionEngine.UNITS[savedUnitCategory] ?: emptyList()
-        val fromUnit = units.firstOrNull() ?: UnitConversionEngine.UNITS[UnitCategory.LENGTH]!![0]
-        val toUnit = units.getOrNull(1) ?: units.firstOrNull() ?: UnitConversionEngine.UNITS[UnitCategory.LENGTH]!![1]
-
-        val toolsSubTabName = prefs.getString("tools_sub_tab", ToolsSubTab.TIP.name) ?: ToolsSubTab.TIP.name
-        val savedToolsSubTab = try { ToolsSubTab.valueOf(toolsSubTabName) } catch (e: Exception) { ToolsSubTab.TIP }
-
-        return CalculatorUiState(
-            theme = savedTheme,
-            angleMode = savedAngleMode,
-            isScientificExpanded = savedScientific,
-            fromCurrency = savedFromCurrency,
-            toCurrency = savedToCurrency,
-            unitCategory = savedUnitCategory,
-            fromUnit = fromUnit,
-            toUnit = toUnit,
-            toolsSubTab = savedToolsSubTab
-        )
-    }
-
-    private val _uiState = MutableStateFlow(loadSavedState())
+    private val _uiState = MutableStateFlow(CalculatorUiState())
     val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
 
     private val _toastEvent = MutableSharedFlow<String>()
@@ -188,12 +153,10 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun setTheme(theme: ThemeMode) {
-        prefs.edit().putString("theme_mode", theme.name).apply()
         _uiState.update { it.copy(theme = theme) }
     }
 
     fun setToolsSubTab(subTab: ToolsSubTab) {
-        prefs.edit().putString("tools_sub_tab", subTab.name).apply()
         _uiState.update { it.copy(toolsSubTab = subTab) }
     }
 
@@ -201,11 +164,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     // Calculator Operations
     // ----------------------------------------------------
     fun toggleScientific() {
-        _uiState.update {
-            val newSci = !it.isScientificExpanded
-            prefs.edit().putBoolean("is_scientific_expanded", newSci).apply()
-            it.copy(isScientificExpanded = newSci)
-        }
+        _uiState.update { it.copy(isScientificExpanded = !it.isScientificExpanded) }
     }
 
     fun toggleAngleMode() {
@@ -213,7 +172,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             val newMode = if (it.angleMode == ExpressionEvaluator.AngleMode.DEG)
                 ExpressionEvaluator.AngleMode.RAD
             else ExpressionEvaluator.AngleMode.DEG
-            prefs.edit().putString("angle_mode", newMode.name).apply()
             it.copy(angleMode = newMode)
         }
         recomputeLiveResult()
@@ -438,25 +396,20 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun setFromCurrency(code: String) {
-        prefs.edit().putString("from_currency", code).apply()
         _uiState.update { it.copy(fromCurrency = code) }
         recalculateCurrency()
     }
 
     fun setToCurrency(code: String) {
-        prefs.edit().putString("to_currency", code).apply()
         _uiState.update { it.copy(toCurrency = code) }
         recalculateCurrency()
     }
 
     fun swapCurrencies() {
         _uiState.update {
-            val newFrom = it.toCurrency
-            val newTo = it.fromCurrency
-            prefs.edit().putString("from_currency", newFrom).putString("to_currency", newTo).apply()
             it.copy(
-                fromCurrency = newFrom,
-                toCurrency = newTo
+                fromCurrency = it.toCurrency,
+                toCurrency = it.fromCurrency
             )
         }
         recalculateCurrency()
@@ -486,7 +439,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         val from = units.firstOrNull() ?: return
         val to = units.getOrNull(1) ?: from
 
-        prefs.edit().putString("unit_category", category.name).apply()
         _uiState.update {
             it.copy(
                 unitCategory = category,
