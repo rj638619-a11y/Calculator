@@ -122,6 +122,7 @@ enum class DateMode(val title: String) {
 
 class CalculatorViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val prefs = application.getSharedPreferences("smart_calculator_prefs", Context.MODE_PRIVATE)
     private val db = AppDatabase.getDatabase(application)
     private val calculationRepository = CalculationRepository(db.calculationDao())
     private val currencyRepository = CurrencyRepository()
@@ -137,8 +138,42 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        val savedThemeName = prefs.getString("pref_theme", ThemeMode.AURORA.name)
+        val loadedTheme = try {
+            ThemeMode.valueOf(savedThemeName ?: ThemeMode.AURORA.name)
+        } catch (e: Exception) {
+            ThemeMode.AURORA
+        }
+
+        val savedAngleMode = prefs.getString("pref_angle_mode", ExpressionEvaluator.AngleMode.DEG.name)
+        val loadedAngleMode = try {
+            ExpressionEvaluator.AngleMode.valueOf(savedAngleMode ?: ExpressionEvaluator.AngleMode.DEG.name)
+        } catch (e: Exception) {
+            ExpressionEvaluator.AngleMode.DEG
+        }
+
+        val savedFromCurr = prefs.getString("pref_from_currency", "USD") ?: "USD"
+        val savedToCurr = prefs.getString("pref_to_currency", "EUR") ?: "EUR"
+        val savedCurrAmount = prefs.getString("pref_currency_amount", "100") ?: "100"
+
+        val savedMemoryVal = prefs.getFloat("pref_memory_value", 0f).toDouble()
+        val savedHasMemory = prefs.getBoolean("pref_has_memory", false)
+
+        _uiState.update {
+            it.copy(
+                theme = loadedTheme,
+                angleMode = loadedAngleMode,
+                fromCurrency = savedFromCurr,
+                toCurrency = savedToCurr,
+                currencyAmount = savedCurrAmount,
+                memoryValue = savedMemoryVal,
+                hasMemory = savedHasMemory
+            )
+        }
+
         // Initial live rate fetch
         refreshCurrencyRates()
+        recalculateCurrency()
         // Initialize tool calculations
         updateTipCalculation()
         updatePercentageCalculation()
@@ -153,6 +188,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun setTheme(theme: ThemeMode) {
+        prefs.edit().putString("pref_theme", theme.name).apply()
         _uiState.update { it.copy(theme = theme) }
     }
 
@@ -172,6 +208,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             val newMode = if (it.angleMode == ExpressionEvaluator.AngleMode.DEG)
                 ExpressionEvaluator.AngleMode.RAD
             else ExpressionEvaluator.AngleMode.DEG
+            prefs.edit().putString("pref_angle_mode", newMode.name).apply()
             it.copy(angleMode = newMode)
         }
         recomputeLiveResult()
@@ -286,6 +323,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     // Memory operations (MC, MR, M+, M-, MS)
     fun memoryClear() {
+        prefs.edit().putFloat("pref_memory_value", 0f).putBoolean("pref_has_memory", false).apply()
         _uiState.update { it.copy(memoryValue = 0.0, hasMemory = false) }
         showToast("Memory cleared")
     }
@@ -300,6 +338,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     fun memoryAdd() {
         val currentVal = getCurrentEvaluationValue()
         val newMem = _uiState.value.memoryValue + currentVal
+        prefs.edit().putFloat("pref_memory_value", newMem.toFloat()).putBoolean("pref_has_memory", true).apply()
         _uiState.update { it.copy(memoryValue = newMem, hasMemory = true) }
         showToast("Added to Memory: ${ExpressionEvaluator.formatResult(newMem)}")
     }
@@ -307,12 +346,14 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     fun memorySubtract() {
         val currentVal = getCurrentEvaluationValue()
         val newMem = _uiState.value.memoryValue - currentVal
+        prefs.edit().putFloat("pref_memory_value", newMem.toFloat()).putBoolean("pref_has_memory", true).apply()
         _uiState.update { it.copy(memoryValue = newMem, hasMemory = true) }
         showToast("Subtracted from Memory: ${ExpressionEvaluator.formatResult(newMem)}")
     }
 
     fun memoryStore() {
         val currentVal = getCurrentEvaluationValue()
+        prefs.edit().putFloat("pref_memory_value", currentVal.toFloat()).putBoolean("pref_has_memory", true).apply()
         _uiState.update { it.copy(memoryValue = currentVal, hasMemory = true) }
         showToast("Stored in Memory: ${ExpressionEvaluator.formatResult(currentVal)}")
     }
@@ -396,26 +437,32 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun setFromCurrency(code: String) {
+        prefs.edit().putString("pref_from_currency", code).apply()
         _uiState.update { it.copy(fromCurrency = code) }
         recalculateCurrency()
     }
 
     fun setToCurrency(code: String) {
+        prefs.edit().putString("pref_to_currency", code).apply()
         _uiState.update { it.copy(toCurrency = code) }
         recalculateCurrency()
     }
 
     fun swapCurrencies() {
         _uiState.update {
+            val newFrom = it.toCurrency
+            val newTo = it.fromCurrency
+            prefs.edit().putString("pref_from_currency", newFrom).putString("pref_to_currency", newTo).apply()
             it.copy(
-                fromCurrency = it.toCurrency,
-                toCurrency = it.fromCurrency
+                fromCurrency = newFrom,
+                toCurrency = newTo
             )
         }
         recalculateCurrency()
     }
 
     fun setCurrencyAmount(amount: String) {
+        prefs.edit().putString("pref_currency_amount", amount).apply()
         _uiState.update { it.copy(currencyAmount = amount) }
         recalculateCurrency()
     }
