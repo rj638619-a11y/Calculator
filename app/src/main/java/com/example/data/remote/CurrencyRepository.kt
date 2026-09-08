@@ -1,7 +1,6 @@
 package com.example.data.remote
 
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -13,7 +12,6 @@ class CurrencyRepository {
 
     private val apiService: CurrencyApiService by lazy {
         val moshi = Moshi.Builder()
-            .addLast(KotlinJsonAdapterFactory())
             .build()
 
         val okHttpClient = OkHttpClient.Builder()
