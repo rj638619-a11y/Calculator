@@ -189,4 +189,61 @@
 # -------------------------------------------------------------------
 -keep class androidx.biometric.** { *; }
 
+# ── Kotlin Reflect (REQUIRED by Moshi KotlinJsonAdapterFactory) ──
+# R8 strips kotlin-reflect because it thinks it's unused, but
+# KotlinJsonAdapterFactory.create() references kotlin.reflect.KClass
+# at runtime via reflection. Without these keeps, the app crashes
+# with NoClassDefFoundError or VerifyError on launch.
+-keep class kotlin.reflect.** { *; }
+-keep class kotlin.reflect.jvm.** { *; }
+-keep class kotlin.reflect.jvm.internal.** { *; }
+-keep class kotlin.reflect.full.** { *; }
+-keepclassmembers class kotlin.reflect.** { *; }
 
+# ── Moshi (reflection + codegen) ──
+-keep class com.squareup.moshi.** { *; }
+-keep class com.squareup.moshi.kotlin.reflect.** { *; }
+-keepclassmembers class * {
+    @com.squareup.moshi.JsonClass *;
+}
+-keepclassmembers class * {
+    @com.squareup.moshi.Json <fields>;
+}
+-keep class com.example.data.remote.CurrencyApiResponse { *; }
+-keep class com.example.data.remote.CurrencyData { *; }
+-keep class com.example.data.remote.CurrencyInfo { *; }
+-keepclassmembers class com.example.data.remote.** { *; }
+
+# ── Retrofit ──
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes AnnotationDefault
+-keep class retrofit2.** { *; }
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
+-keep class com.example.data.remote.CurrencyApiService { *; }
+-dontwarn retrofit2.**
+
+# ── OkHttp ──
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
+# ── Room ──
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep @androidx.room.Entity class * { *; }
+-keep class com.example.data.local.CalculationEntity { *; }
+-keep class com.example.data.local.AppDatabase { *; }
+-keep class com.example.data.local.CalculationDao { *; }
+
+# ── Kotlin Metadata ──
+-keep class kotlin.Metadata { *; }
+-keepattributes *Annotation*
+
+# ── Coroutines ──
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# ── Keep all app data models ──
+-keep class com.example.data.** { *; }
+-keep class com.example.engine.** { *; }
