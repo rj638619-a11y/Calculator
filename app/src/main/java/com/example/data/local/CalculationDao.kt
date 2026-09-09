@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CalculationDao {
-    @Query("SELECT * FROM calculation_history ORDER BY timestamp DESC")
+    @Query("SELECT * FROM calculation_history ORDER BY timestamp DESC LIMIT 500")
     fun getAllHistory(): Flow<List<CalculationEntity>>
 
-    @Query("SELECT * FROM calculation_history WHERE isFavorite = 1 ORDER BY timestamp DESC")
+    @Query("SELECT * FROM calculation_history WHERE isFavorite = 1 ORDER BY timestamp DESC LIMIT 500")
     fun getFavoriteHistory(): Flow<List<CalculationEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

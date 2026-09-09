@@ -1,9 +1,10 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
@@ -52,7 +53,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +63,7 @@ import com.example.ui.components.LiquidGlassCard
 import com.example.ui.theme.ThemeMode
 import com.example.ui.viewmodel.CalculatorViewModel
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -91,10 +92,6 @@ fun HistoryScreen(
         }
     }
 
-    val dateFormatter = remember {
-        SimpleDateFormat("Today, hh:mm a", Locale.getDefault())
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -102,7 +99,7 @@ fun HistoryScreen(
             .padding(top = 8.dp, bottom = 8.dp)
     ) {
         // ----------------------------------------------------
-        // Top Header: Title "History" & Clear All Button
+        // Top Header: Title "History" & Favorites / Clear Actions
         // ----------------------------------------------------
         Row(
             modifier = Modifier
@@ -174,13 +171,16 @@ fun HistoryScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Search Bar
+        // ----------------------------------------------------
+        // Search Bar (Lightweight & Smooth)
+        // ----------------------------------------------------
         LiquidGlassCard(
             theme = theme,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            shape = RoundedCornerShape(18.dp)
+            shape = RoundedCornerShape(18.dp),
+            elevation = 2.dp
         ) {
             Row(
                 modifier = Modifier
@@ -230,7 +230,9 @@ fun HistoryScreen(
             }
         }
 
+        // ----------------------------------------------------
         // History List
+        // ----------------------------------------------------
         if (filteredList.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -262,92 +264,22 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(filteredList, key = { it.id }) { item ->
-                    // Soft white glass card
-                    LiquidGlassCard(
+                    HistoryItemCard(
+                        item = item,
                         theme = theme,
-                        shape = RoundedCornerShape(22.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onTap = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.reuseHistory(item, asExpression = false)
-                                    },
-                                    onLongPress = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        selectedItemForSheet = item
-                                    }
-                                )
-                            }
-                            .testTag("history_item_${item.id}")
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 18.dp, vertical = 14.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Timestamp: "Today, 10:45 AM"
-                                Text(
-                                    text = dateFormatter.format(Date(item.timestamp)),
-                                    color = theme.textSecondary.copy(alpha = 0.6f),
-                                    fontSize = 11.sp
-                                )
-
-                                IconButton(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.toggleFavoriteHistory(item)
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                                        contentDescription = "Favorite",
-                                        tint = if (item.isFavorite) Color(0xFFFFB703) else theme.textSecondary.copy(alpha = 0.4f),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            // Small expression
-                            Text(
-                                text = item.expression,
-                                color = theme.textSecondary,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            // Large orange result: 10,320
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = item.result,
-                                    color = theme.primaryAccent,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                Text(
-                                    text = "Hold for options",
-                                    color = theme.textSecondary.copy(alpha = 0.45f),
-                                    fontSize = 10.sp
-                                )
-                            }
+                        onTap = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.reuseHistory(item, asExpression = false)
+                        },
+                        onLongPress = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            selectedItemForSheet = item
+                        },
+                        onToggleFavorite = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.toggleFavoriteHistory(item)
                         }
-                    }
+                    )
                 }
             }
         }
@@ -373,6 +305,7 @@ fun HistoryScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -471,6 +404,134 @@ fun HistoryScreen(
             containerColor = if (theme.isLight) Color.White else Color(0xFF242428),
             shape = RoundedCornerShape(24.dp)
         )
+    }
+}
+
+// ----------------------------------------------------
+// Optimized History Item Card (Zero lag on low-end phones)
+// ----------------------------------------------------
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun HistoryItemCard(
+    item: CalculationEntity,
+    theme: ThemeMode,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
+    onToggleFavorite: () -> Unit
+) {
+    val cardBg = if (theme.isLight) Color.White else theme.surfaceGlass
+    val cardBorder = if (theme.isLight) Color(0x0F000000) else theme.borderGlass.copy(alpha = 0.35f)
+    val formattedDate = remember(item.timestamp) { formatHistoryTimestamp(item.timestamp) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(22.dp))
+            .combinedClickable(
+                onClick = onTap,
+                onLongClick = onLongPress
+            )
+            .padding(horizontal = 18.dp, vertical = 14.dp)
+            .testTag("history_item_${item.id}")
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Timestamp
+                Text(
+                    text = formattedDate,
+                    color = theme.textSecondary.copy(alpha = 0.6f),
+                    fontSize = 11.sp
+                )
+
+                IconButton(
+                    onClick = onToggleFavorite,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                        contentDescription = "Favorite",
+                        tint = if (item.isFavorite) Color(0xFFFFB703) else theme.textSecondary.copy(alpha = 0.4f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Expression
+            Text(
+                text = item.expression,
+                color = theme.textSecondary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // Result
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = item.result,
+                    color = theme.primaryAccent,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "Hold for options",
+                    color = theme.textSecondary.copy(alpha = 0.45f),
+                    fontSize = 10.sp
+                )
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------
+// Safe Relative Date Formatter Utility (Crash-Free)
+// ----------------------------------------------------
+private fun formatHistoryTimestamp(timestamp: Long): String {
+    return try {
+        val now = System.currentTimeMillis()
+        val calNow = Calendar.getInstance().apply { timeInMillis = now }
+        val calItem = Calendar.getInstance().apply { timeInMillis = timestamp }
+
+        val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(timestamp))
+
+        val isSameDay = calNow.get(Calendar.YEAR) == calItem.get(Calendar.YEAR) &&
+                calNow.get(Calendar.DAY_OF_YEAR) == calItem.get(Calendar.DAY_OF_YEAR)
+
+        if (isSameDay) {
+            return "Today, $timeFormat"
+        }
+
+        calNow.add(Calendar.DAY_OF_YEAR, -1)
+        val isYesterday = calNow.get(Calendar.YEAR) == calItem.get(Calendar.YEAR) &&
+                calNow.get(Calendar.DAY_OF_YEAR) == calItem.get(Calendar.DAY_OF_YEAR)
+
+        if (isYesterday) {
+            return "Yesterday, $timeFormat"
+        }
+
+        val isSameYear = Calendar.getInstance().apply { timeInMillis = now }.get(Calendar.YEAR) == calItem.get(Calendar.YEAR)
+        val dateFormat = if (isSameYear) {
+            SimpleDateFormat("MMM d, hh:mm a", Locale.getDefault())
+        } else {
+            SimpleDateFormat("MMM d, yyyy, hh:mm a", Locale.getDefault())
+        }
+        dateFormat.format(Date(timestamp))
+    } catch (e: Exception) {
+        "Recent"
     }
 }
 
