@@ -3,10 +3,12 @@ package com.example
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -28,15 +30,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.AppNavTab
 import com.example.ui.components.LiquidGlassNavBar
+import com.example.ui.screens.AboutScreen
 import com.example.ui.screens.CalculatorScreen
 import com.example.ui.screens.CurrencyScreen
 import com.example.ui.screens.HistoryScreen
+import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.SplashScreen
+import com.example.ui.screens.ThemeScreen
 import com.example.ui.screens.ToolsScreen
 import com.example.ui.screens.UnitConverterScreen
 import com.example.ui.theme.LiquidGlassBackground
@@ -62,81 +67,115 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            // Back button handling
+            BackHandler(enabled = state.isSettingsOpen || state.isThemesOpen || state.isAboutOpen || state.currentTab != AppNavTab.CALCULATOR) {
+                when {
+                    state.isAboutOpen -> viewModel.closeAbout()
+                    state.isThemesOpen -> viewModel.closeThemes()
+                    state.isSettingsOpen -> viewModel.closeSettings()
+                    state.currentTab != AppNavTab.CALCULATOR -> viewModel.selectTab(AppNavTab.CALCULATOR)
+                }
+            }
+
             SmartCalculatorTheme(themeMode = state.theme) {
                 LiquidGlassBackground(theme = state.theme) {
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        containerColor = Color.Transparent,
-                        contentColor = state.theme.textPrimary,
-                        snackbarHost = {
-                            SnackbarHost(
-                                hostState = snackbarHostState,
-                                modifier = Modifier.padding(bottom = 80.dp)
-                            )
-                        },
-                        bottomBar = {
-                            LiquidGlassNavBar(
-                                selectedTab = state.currentTab,
-                                onTabSelected = { viewModel.selectTab(it) },
-                                theme = state.theme
-                            )
-                        }
-                    ) { innerPadding ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
-                                .windowInsetsPadding(WindowInsets.statusBars)
-                        ) {
-                            AnimatedContent(
-                                targetState = state.currentTab,
-                                transitionSpec = {
-                                    val forward = targetState.ordinal > initialState.ordinal
-                                    if (forward) {
-                                        (slideInHorizontally(
-                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                                        ) { width -> (width * 0.25f).toInt() } + fadeIn(
-                                            animationSpec = tween(250, easing = FastOutSlowInEasing)
-                                        )) togetherWith (slideOutHorizontally(
-                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                                        ) { width -> (-width * 0.25f).toInt() } + fadeOut(
-                                            animationSpec = tween(200, easing = FastOutSlowInEasing)
-                                        ))
-                                    } else {
-                                        (slideInHorizontally(
-                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                                        ) { width -> (-width * 0.25f).toInt() } + fadeIn(
-                                            animationSpec = tween(250, easing = FastOutSlowInEasing)
-                                        )) togetherWith (slideOutHorizontally(
-                                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                                        ) { width -> (width * 0.25f).toInt() } + fadeOut(
-                                            animationSpec = tween(200, easing = FastOutSlowInEasing)
-                                        ))
+                    if (state.showSplash) {
+                        SplashScreen(
+                            theme = state.theme,
+                            onDismiss = { viewModel.dismissSplash() }
+                        )
+                    } else if (state.isAboutOpen) {
+                        AboutScreen(
+                            theme = state.theme,
+                            onBack = { viewModel.closeAbout() }
+                        )
+                    } else if (state.isThemesOpen) {
+                        ThemeScreen(
+                            currentTheme = state.theme,
+                            viewModel = viewModel,
+                            onBack = { viewModel.closeThemes() }
+                        )
+                    } else if (state.isSettingsOpen) {
+                        SettingsScreen(
+                            state = state,
+                            viewModel = viewModel,
+                            onBack = { viewModel.closeSettings() }
+                        )
+                    } else {
+                        Scaffold(
+                            modifier = Modifier.fillMaxSize(),
+                            contentWindowInsets = WindowInsets.statusBars,
+                            containerColor = Color.Transparent,
+                            contentColor = state.theme.textPrimary,
+                            snackbarHost = {
+                                SnackbarHost(
+                                    hostState = snackbarHostState,
+                                    modifier = Modifier.padding(bottom = 80.dp)
+                                )
+                            },
+                            bottomBar = {
+                                LiquidGlassNavBar(
+                                    selectedTab = state.currentTab,
+                                    onTabSelected = { viewModel.selectTab(it) },
+                                    theme = state.theme
+                                )
+                            }
+                        ) { innerPadding ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding)
+                            ) {
+                                AnimatedContent(
+                                    targetState = state.currentTab,
+                                    transitionSpec = {
+                                        val forward = targetState.ordinal > initialState.ordinal
+                                        if (forward) {
+                                            (slideInHorizontally(
+                                                animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                            ) { width -> (width * 0.25f).toInt() } + fadeIn(
+                                                animationSpec = tween(250, easing = FastOutSlowInEasing)
+                                            )) togetherWith (slideOutHorizontally(
+                                                animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                            ) { width -> (-width * 0.25f).toInt() } + fadeOut(
+                                                animationSpec = tween(200, easing = FastOutSlowInEasing)
+                                            ))
+                                        } else {
+                                            (slideInHorizontally(
+                                                animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                            ) { width -> (-width * 0.25f).toInt() } + fadeIn(
+                                                animationSpec = tween(250, easing = FastOutSlowInEasing)
+                                            )) togetherWith (slideOutHorizontally(
+                                                animationSpec = tween(300, easing = FastOutSlowInEasing)
+                                            ) { width -> (width * 0.25f).toInt() } + fadeOut(
+                                                animationSpec = tween(200, easing = FastOutSlowInEasing)
+                                            ))
+                                        }
+                                    },
+                                    label = "TabTransition"
+                                ) { tab ->
+                                    when (tab) {
+                                        AppNavTab.CALCULATOR -> CalculatorScreen(
+                                            state = state,
+                                            viewModel = viewModel
+                                        )
+                                        AppNavTab.CURRENCY -> CurrencyScreen(
+                                            state = state,
+                                            viewModel = viewModel
+                                        )
+                                        AppNavTab.UNITS -> UnitConverterScreen(
+                                            state = state,
+                                            viewModel = viewModel
+                                        )
+                                        AppNavTab.TOOLS -> ToolsScreen(
+                                            state = state,
+                                            viewModel = viewModel
+                                        )
+                                        AppNavTab.HISTORY -> HistoryScreen(
+                                            viewModel = viewModel,
+                                            theme = state.theme
+                                        )
                                     }
-                                },
-                                label = "TabTransition"
-                            ) { tab ->
-                                when (tab) {
-                                    AppNavTab.CALCULATOR -> CalculatorScreen(
-                                        state = state,
-                                        viewModel = viewModel
-                                    )
-                                    AppNavTab.CURRENCY -> CurrencyScreen(
-                                        state = state,
-                                        viewModel = viewModel
-                                    )
-                                    AppNavTab.UNITS -> UnitConverterScreen(
-                                        state = state,
-                                        viewModel = viewModel
-                                    )
-                                    AppNavTab.TOOLS -> ToolsScreen(
-                                        state = state,
-                                        viewModel = viewModel
-                                    )
-                                    AppNavTab.HISTORY -> HistoryScreen(
-                                        viewModel = viewModel,
-                                        theme = state.theme
-                                    )
                                 }
                             }
                         }

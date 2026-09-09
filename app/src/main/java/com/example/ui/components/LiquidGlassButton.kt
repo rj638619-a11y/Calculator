@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,16 +15,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -31,7 +29,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -56,133 +53,151 @@ fun LiquidGlassButton(
     modifier: Modifier = Modifier,
     type: CalcButtonType = CalcButtonType.NUMBER,
     icon: ImageVector? = null,
-    fontSize: TextUnit = 22.sp,
-    shape: Shape = CircleShape,
+    fontSize: TextUnit = 24.sp,
+    shape: Shape = RoundedCornerShape(26.dp),
     testTag: String = text.lowercase()
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Spring-based animation for button press (0.96f scale with bounce-back on release)
+    // Tactile physical press spring animation
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1.0f,
+        targetValue = if (isPressed) 0.93f else 1.0f,
         animationSpec = spring(
-            dampingRatio = 0.6f,
+            dampingRatio = 0.65f,
             stiffness = Spring.StiffnessMedium
         ),
         label = "buttonScale"
     )
 
-    val (bgColor, textColor, borderColor) = when (type) {
-        CalcButtonType.NUMBER -> Triple(
-            theme.buttonNumberColor,
-            theme.textPrimary,
-            Color.White.copy(alpha = 0.15f)
-        )
-        CalcButtonType.OPERATOR -> Triple(
-            theme.buttonOpColor,
-            theme.primaryAccent,
-            theme.primaryAccent.copy(alpha = 0.5f)
-        )
-        CalcButtonType.FUNCTION -> Triple(
-            theme.buttonFuncColor,
-            theme.tertiaryAccent,
-            theme.tertiaryAccent.copy(alpha = 0.4f)
-        )
-        CalcButtonType.ACTION -> Triple(
-            theme.buttonActionColor,
-            Color(0xFFFFD1DC),
-            Color(0x66FF5C8A)
-        )
-        CalcButtonType.EQUALS -> Triple(
-            theme.primaryAccent.copy(alpha = 0.85f),
-            Color(0xFF030712),
-            Color.White.copy(alpha = 0.5f)
-        )
-        CalcButtonType.MEMORY -> Triple(
-            theme.surfaceGlassLight.copy(alpha = 0.35f),
-            theme.textSecondary,
-            Color.White.copy(alpha = 0.15f)
-        )
+    val isLight = theme.isLight
+
+    val (bgColor, textColor, borderColor, elevation, shadowSpot) = when (type) {
+        CalcButtonType.NUMBER -> {
+            if (isLight) {
+                ButtonColors(
+                    bg = Color.White,
+                    text = Color(0xFF1C1C1E),
+                    border = Color(0x0A000000),
+                    elevation = 4.dp,
+                    shadow = Color(0x12000000)
+                )
+            } else {
+                ButtonColors(
+                    bg = theme.buttonNumberColor,
+                    text = theme.textPrimary,
+                    border = Color(0x1AFFFFFF),
+                    elevation = 4.dp,
+                    shadow = Color(0x40000000)
+                )
+            }
+        }
+        CalcButtonType.OPERATOR -> {
+            if (isLight) {
+                ButtonColors(
+                    bg = Color(0xFFFFEDE0),
+                    text = Color(0xFFFF7A00),
+                    border = Color(0x1AFF7A00),
+                    elevation = 3.dp,
+                    shadow = Color(0x14FF7A00)
+                )
+            } else {
+                ButtonColors(
+                    bg = theme.buttonOpColor,
+                    text = theme.primaryAccent,
+                    border = theme.primaryAccent.copy(alpha = 0.4f),
+                    elevation = 4.dp,
+                    shadow = Color(0x40000000)
+                )
+            }
+        }
+        CalcButtonType.FUNCTION, CalcButtonType.ACTION, CalcButtonType.MEMORY -> {
+            if (isLight) {
+                ButtonColors(
+                    bg = Color(0xFFF6F5F2),
+                    text = Color(0xFF1C1C1E),
+                    border = Color(0x0A000000),
+                    elevation = 3.dp,
+                    shadow = Color(0x0F000000)
+                )
+            } else {
+                ButtonColors(
+                    bg = theme.buttonFuncColor,
+                    text = theme.textPrimary,
+                    border = Color(0x1AFFFFFF),
+                    elevation = 3.dp,
+                    shadow = Color(0x40000000)
+                )
+            }
+        }
+        CalcButtonType.EQUALS -> {
+            ButtonColors(
+                bg = theme.buttonActionColor,
+                text = Color.White,
+                border = Color.Transparent,
+                elevation = 6.dp,
+                shadow = theme.buttonActionColor.copy(alpha = 0.5f)
+            )
+        }
     }
 
     Box(
         modifier = modifier
-            // 60fps GPU-accelerated transformation layer
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-                clip = true
-                this.shape = shape
             }
+            .then(
+                if (elevation > 0.dp) {
+                    Modifier.shadow(
+                        elevation = if (isPressed) elevation / 2 else elevation,
+                        shape = shape,
+                        spotColor = shadowSpot,
+                        ambientColor = Color(0x08000000)
+                    )
+                } else Modifier
+            )
             .clip(shape)
-            .testTag(testTag)
+            .background(bgColor)
+            .border(
+                border = BorderStroke(1.dp, borderColor),
+                shape = shape
+            )
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(
-                    color = if (type == CalcButtonType.EQUALS) Color(0xFF030712).copy(alpha = 0.3f) else Color.White.copy(alpha = 0.3f)
-                ),
+                indication = null,
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onClick()
                 }
             )
-            .background(
-                if (type == CalcButtonType.EQUALS) {
-                    theme.getActionGradient()
-                } else {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            bgColor.copy(alpha = if (isPressed) 0.75f else 0.50f),
-                            bgColor.copy(alpha = if (isPressed) 0.55f else 0.35f)
-                        )
-                    )
-                }
-            )
-            .background(Color.White.copy(alpha = if (isPressed) 0.16f else 0.10f)) // Semi-transparent glass overlay
-            .border(
-                width = if (type == CalcButtonType.EQUALS) 1.5.dp else 1.dp,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        borderColor.copy(alpha = if (isPressed) 0.85f else 0.55f),
-                        Color.White.copy(alpha = 0.15f),
-                        borderColor.copy(alpha = if (isPressed) 0.65f else 0.35f)
-                    ),
-                    start = Offset(0f, 0f),
-                    end = Offset(150f, 150f)
-                ),
-                shape = shape
-            )
-            .drawBehind {
-                // Top specular highlight line
-                val strokeWidth = 1.dp.toPx()
-                drawLine(
-                    color = Color.White.copy(alpha = if (isPressed) 0.5f else 0.25f),
-                    start = Offset(size.width * 0.15f, strokeWidth),
-                    end = Offset(size.width * 0.85f, strokeWidth),
-                    strokeWidth = strokeWidth
-                )
-            }
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+            .testTag(testTag),
         contentAlignment = Alignment.Center
     ) {
         if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = text,
-                tint = textColor
+                tint = textColor,
+                modifier = Modifier.padding(12.dp)
             )
         } else {
             Text(
                 text = text,
-                color = textColor,
                 fontSize = fontSize,
-                fontWeight = if (type == CalcButtonType.NUMBER || type == CalcButtonType.EQUALS) FontWeight.SemiBold else FontWeight.Medium,
-                fontFamily = FontFamily.SansSerif,
+                fontWeight = if (type == CalcButtonType.EQUALS || type == CalcButtonType.OPERATOR) FontWeight.Bold else FontWeight.Medium,
+                color = textColor,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
 
+private data class ButtonColors(
+    val bg: Color,
+    val text: Color,
+    val border: Color,
+    val elevation: androidx.compose.ui.unit.Dp,
+    val shadow: Color
+)

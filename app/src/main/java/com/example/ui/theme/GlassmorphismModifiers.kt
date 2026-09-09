@@ -1,13 +1,10 @@
 package com.example.ui.theme
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -19,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
@@ -27,16 +23,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-
-// Gradient key colors shifting smoothly: Purple -> Blue -> Teal
-private val ShiftingPurple = Color(0xFF7B2CBF)
-private val ShiftingIndigo = Color(0xFF4338CA)
-private val ShiftingBlue = Color(0xFF0284C7)
-private val ShiftingTeal = Color(0xFF0D9488)
-private val ShiftingCyan = Color(0xFF00F5D4)
 
 @Composable
 fun LiquidGlassBackground(
@@ -44,82 +32,42 @@ fun LiquidGlassBackground(
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "LiquidGlassBgShifting")
-
-    // Slow shifting cycle (Purple -> Blue -> Teal -> Purple)
-    val colorShiftPhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 24000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "colorShiftPhase"
-    )
-
-    val shiftX by infiniteTransition.animateFloat(
-        initialValue = 0.1f,
-        targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 16000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "shiftX"
-    )
-
-    val shiftY by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 0.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 20000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "shiftY"
-    )
+    val infiniteTransition = rememberInfiniteTransition(label = "LiquidGlassBgAmbient")
 
     val pulseGlow by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.8f,
+        initialValue = 0.85f,
+        targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 8000, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 7000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseGlow"
     )
 
-    // Dynamic shifting colors based on active theme
-    val orb1 = theme.secondaryAccent
-    val orb2 = theme.primaryAccent
-    val orb3 = theme.tertiaryAccent
+    val driftX by infiniteTransition.animateFloat(
+        initialValue = -0.05f,
+        targetValue = 0.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 11000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "driftX"
+    )
 
-    val (dynamicOrb1Color, dynamicOrb2Color, dynamicOrb3Color) = when {
-        colorShiftPhase < 1f -> {
-            val frac = colorShiftPhase
-            Triple(
-                lerpColor(orb1, orb2, frac),
-                lerpColor(orb2, orb3, frac),
-                lerpColor(orb3, orb1, frac)
-            )
-        }
-        colorShiftPhase < 2f -> {
-            val frac = colorShiftPhase - 1f
-            Triple(
-                lerpColor(orb2, orb3, frac),
-                lerpColor(orb3, orb1, frac),
-                lerpColor(orb1, orb2, frac)
-            )
-        }
-        else -> {
-            val frac = colorShiftPhase - 2f
-            Triple(
-                lerpColor(orb3, orb1, frac),
-                lerpColor(orb1, orb2, frac),
-                lerpColor(orb2, orb3, frac)
-            )
-        }
-    }
+    val driftY by infiniteTransition.animateFloat(
+        initialValue = -0.04f,
+        targetValue = 0.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 13000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "driftY"
+    )
 
     val bgColors = theme.backgroundColors
+    val accentColor = theme.primaryAccent
+    val secondaryColor = theme.secondaryAccent
+    val isLight = theme.isLight
 
     Box(
         modifier = modifier
@@ -128,7 +76,7 @@ fun LiquidGlassBackground(
                 val w = size.width
                 val h = size.height
 
-                // Base deep atmospheric gradient
+                // 1. Subtle warm base gradient
                 drawRect(
                     brush = Brush.verticalGradient(
                         colors = bgColors,
@@ -137,76 +85,74 @@ fun LiquidGlassBackground(
                     )
                 )
 
-                // Shifting Orb 1: Purple / Indigo Glow (Top-Left / Central Drift)
+                // 2. Primary ambient warm glow blob (Top-Right / Upper quadrant as seen in design reference)
+                val primaryAlpha = if (isLight) 0.20f * pulseGlow else 0.25f * pulseGlow
+                val primaryCenter = Offset(
+                    x = w * (0.82f + driftX),
+                    y = h * (0.22f + driftY)
+                )
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb1Color.copy(alpha = 0.32f * pulseGlow),
-                            dynamicOrb1Color.copy(alpha = 0.10f * pulseGlow),
+                            accentColor.copy(alpha = primaryAlpha.coerceIn(0f, 0.45f)),
+                            secondaryColor.copy(alpha = (primaryAlpha * 0.45f).coerceIn(0f, 0.30f)),
                             Color.Transparent
                         ),
-                        center = Offset(w * (0.2f + 0.6f * shiftX), h * (0.15f + 0.35f * shiftY)),
-                        radius = w * 0.85f
+                        center = primaryCenter,
+                        radius = w * 0.82f
                     )
                 )
 
-                // Shifting Orb 2: Blue / Teal Glow (Bottom-Right / Upward Drift)
+                // 3. Secondary subtle ambient warmth (Bottom-Right / Center as seen in splash & bottom screens)
+                val secondaryAlpha = if (isLight) 0.14f * pulseGlow else 0.18f * pulseGlow
+                val secondaryCenter = Offset(
+                    x = w * (0.90f - driftX),
+                    y = h * (0.85f - driftY)
+                )
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            dynamicOrb2Color.copy(alpha = 0.28f),
-                            dynamicOrb2Color.copy(alpha = 0.08f),
+                            secondaryColor.copy(alpha = secondaryAlpha.coerceIn(0f, 0.35f)),
+                            accentColor.copy(alpha = (secondaryAlpha * 0.35f).coerceIn(0f, 0.20f)),
                             Color.Transparent
                         ),
-                        center = Offset(w * (0.85f - 0.55f * shiftY), h * (0.65f + 0.25f * shiftX)),
-                        radius = w * 0.90f
+                        center = secondaryCenter,
+                        radius = w * 0.75f
                     )
                 )
 
-                // Shifting Orb 3: Cyan / Teal Accent Glow (Bottom-Center Pulse)
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            dynamicOrb3Color.copy(alpha = 0.22f * pulseGlow),
-                            Color.Transparent
-                        ),
-                        center = Offset(w * (0.5f + 0.3f * shiftX), h * (0.9f - 0.4f * shiftY)),
-                        radius = w * 0.7f
+                // 4. Delicate Top-Left fill light to balance contrast
+                if (isLight) {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.5f),
+                                Color.Transparent
+                            ),
+                            center = Offset(w * 0.1f, h * 0.05f),
+                            radius = w * 0.5f
+                        )
                     )
-                )
+                }
             },
         content = content
     )
 }
 
-private fun lerpColor(start: Color, end: Color, fraction: Float): Color {
-    val f = fraction.coerceIn(0f, 1f)
-    return Color(
-        red = start.red + (end.red - start.red) * f,
-        green = start.green + (end.green - start.green) * f,
-        blue = start.blue + (end.blue - start.blue) * f,
-        alpha = start.alpha + (end.alpha - start.alpha) * f
-    )
-}
-
-/**
- * Glassmorphic surface modifier with soft blur, semi-transparent white overlay,
- * and subtle frosted border for 60fps hardware accelerated rendering.
- */
 fun Modifier.softBlurGlass(
-    shape: Shape = RoundedCornerShape(32.dp),
-    backgroundColor: Color = Color.White.copy(alpha = 0.12f),
-    borderColor: Color = Color.White.copy(alpha = 0.15f),
+    shape: Shape = RoundedCornerShape(24.dp),
+    backgroundColor: Color = Color.White,
+    borderColor: Color = Color(0x0D000000),
     borderWidth: Dp = 1.dp,
-    elevation: Dp = 0.dp
+    elevation: Dp = 6.dp
 ): Modifier = this
     .then(
         if (elevation > 0.dp) {
             Modifier.shadow(
                 elevation = elevation,
                 shape = shape,
-                ambientColor = borderColor.copy(alpha = 0.2f),
-                spotColor = borderColor.copy(alpha = 0.35f)
+                ambientColor = Color(0x08000000),
+                spotColor = Color(0x12000000)
             )
         } else Modifier
     )
@@ -218,36 +164,15 @@ fun Modifier.softBlurGlass(
     )
 
 fun Modifier.liquidGlass(
-    shape: Shape = RoundedCornerShape(32.dp),
-    backgroundColor: Color = Color(0x33101E2E),
-    borderColor: Color = Color.White.copy(alpha = 0.15f),
+    shape: Shape = RoundedCornerShape(24.dp),
+    backgroundColor: Color = Color.White,
+    borderColor: Color = Color(0x0D000000),
     borderWidth: Dp = 1.dp,
-    elevation: Dp = 0.dp
-): Modifier = this
-    .then(
-        if (elevation > 0.dp) {
-            Modifier.shadow(
-                elevation = elevation,
-                shape = shape,
-                ambientColor = borderColor.copy(alpha = 0.3f),
-                spotColor = borderColor.copy(alpha = 0.5f)
-            )
-        } else Modifier
-    )
-    .clip(shape)
-    .background(backgroundColor)
-    .background(Color.White.copy(alpha = 0.12f))
-    .border(
-        width = borderWidth,
-        brush = Brush.linearGradient(
-            colors = listOf(
-                borderColor.copy(alpha = 0.55f),
-                Color.White.copy(alpha = 0.15f),
-                borderColor.copy(alpha = 0.35f)
-            ),
-            start = Offset(0f, 0f),
-            end = Offset(300f, 400f)
-        ),
-        shape = shape
-    )
-
+    elevation: Dp = 6.dp
+): Modifier = softBlurGlass(
+    shape = shape,
+    backgroundColor = backgroundColor,
+    borderColor = borderColor,
+    borderWidth = borderWidth,
+    elevation = elevation
+)

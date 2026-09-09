@@ -1,10 +1,9 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -31,12 +32,15 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,12 +51,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.CalculationEntity
-import com.example.ui.components.LiquidGlassButton
 import com.example.ui.components.LiquidGlassCard
 import com.example.ui.theme.ThemeMode
 import com.example.ui.viewmodel.CalculatorViewModel
@@ -60,6 +66,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
     viewModel: CalculatorViewModel,
@@ -67,9 +74,12 @@ fun HistoryScreen(
     modifier: Modifier = Modifier
 ) {
     val historyList by viewModel.historyList.collectAsState()
+    val haptic = LocalHapticFeedback.current
+
     var searchQuery by remember { mutableStateOf("") }
     var filterFavoritesOnly by remember { mutableStateOf(false) }
     var showClearDialog by remember { mutableStateOf(false) }
+    var selectedItemForSheet by remember { mutableStateOf<CalculationEntity?>(null) }
 
     val filteredList = remember(historyList, searchQuery, filterFavoritesOnly) {
         historyList.filter { item ->
@@ -81,18 +91,23 @@ fun HistoryScreen(
         }
     }
 
-    val dateFormatter = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
+    val dateFormatter = remember {
+        SimpleDateFormat("Today, hh:mm a", Locale.getDefault())
+    }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 18.dp)
+            .padding(top = 8.dp, bottom = 8.dp)
     ) {
-        // Header
+        // ----------------------------------------------------
+        // Top Header: Title "History" & Clear All Button
+        // ----------------------------------------------------
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 10.dp),
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -104,40 +119,60 @@ fun HistoryScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${filteredList.size} calculations stored",
+                    text = "${filteredList.size} calculations",
                     color = theme.textSecondary,
-                    fontSize = 13.sp
+                    fontSize = 12.sp
                 )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Favorites Toggle
                 IconButton(
-                    onClick = { filterFavoritesOnly = !filterFavoritesOnly },
-                    modifier = Modifier.testTag("filter_fav_btn")
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        filterFavoritesOnly = !filterFavoritesOnly
+                    },
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(if (theme.isLight) Color.White else Color(0x33FFFFFF))
+                        .border(1.dp, if (theme.isLight) Color(0x0F000000) else Color(0x22FFFFFF), CircleShape)
+                        .testTag("filter_fav_btn")
                 ) {
                     Icon(
                         imageVector = if (filterFavoritesOnly) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                        contentDescription = "Favorites only",
-                        tint = if (filterFavoritesOnly) Color(0xFFFFD166) else theme.textSecondary
+                        contentDescription = "Favorites",
+                        tint = if (filterFavoritesOnly) Color(0xFFFFB703) else theme.textSecondary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                // Clear All Button
+                Spacer(modifier = Modifier.width(8.dp))
+
                 if (historyList.isNotEmpty()) {
                     IconButton(
-                        onClick = { showClearDialog = true },
-                        modifier = Modifier.testTag("clear_all_history_btn")
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            showClearDialog = true
+                        },
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(if (theme.isLight) Color.White else Color(0x33FFFFFF))
+                            .border(1.dp, if (theme.isLight) Color(0x0F000000) else Color(0x22FFFFFF), CircleShape)
+                            .testTag("clear_all_history_btn")
                     ) {
                         Icon(
                             imageVector = Icons.Default.DeleteSweep,
                             contentDescription = "Clear all",
-                            tint = Color(0xFFFF5C8A)
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Search Bar
         LiquidGlassCard(
@@ -145,20 +180,19 @@ fun HistoryScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            shape = CircleShape,
-            highlightIntensity = 0.3f
+            shape = RoundedCornerShape(18.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 14.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
                     tint = theme.textSecondary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 OutlinedTextField(
@@ -171,13 +205,12 @@ fun HistoryScreen(
                             fontSize = 14.sp
                         )
                     },
-                    shape = CircleShape,
+                    shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = theme.textPrimary,
                         unfocusedTextColor = theme.textPrimary,
                         focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = theme.primaryAccent
+                        unfocusedBorderColor = Color.Transparent
                     ),
                     singleLine = true,
                     modifier = Modifier
@@ -188,7 +221,7 @@ fun HistoryScreen(
                     IconButton(onClick = { searchQuery = "" }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = "Clear search",
+                            contentDescription = "Clear",
                             tint = theme.textSecondary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -209,20 +242,15 @@ fun HistoryScreen(
                     Icon(
                         imageVector = Icons.Default.History,
                         contentDescription = null,
-                        tint = theme.textSecondary.copy(alpha = 0.4f),
-                        modifier = Modifier.size(64.dp)
+                        tint = theme.textSecondary.copy(alpha = 0.35f),
+                        modifier = Modifier.size(56.dp)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = if (searchQuery.isNotEmpty() || filterFavoritesOnly) "No matching calculations found" else "No history yet",
+                        text = if (searchQuery.isNotEmpty() || filterFavoritesOnly) "No calculations match" else "No history yet",
                         color = theme.textSecondary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "Calculations will appear here automatically",
-                        color = theme.textSecondary.copy(alpha = 0.6f),
-                        fontSize = 12.sp
                     )
                 }
             }
@@ -234,34 +262,190 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(filteredList, key = { it.id }) { item ->
-                    HistoryItemCard(
-                        item = item,
+                    // Soft white glass card
+                    LiquidGlassCard(
                         theme = theme,
-                        formattedDate = dateFormatter.format(Date(item.timestamp)),
-                        onReuseExpression = { viewModel.reuseHistory(item, asExpression = true) },
-                        onReuseResult = { viewModel.reuseHistory(item, asExpression = false) },
-                        onCopy = { viewModel.copyToClipboard("${item.expression} = ${item.result}") },
-                        onDelete = { viewModel.deleteHistoryItem(item) },
-                        onToggleFavorite = { viewModel.toggleFavoriteHistory(item) }
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                        shape = RoundedCornerShape(22.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.reuseHistory(item, asExpression = false)
+                                    },
+                                    onLongPress = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        selectedItemForSheet = item
+                                    }
+                                )
+                            }
+                            .testTag("history_item_${item.id}")
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 14.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Timestamp: "Today, 10:45 AM"
+                                Text(
+                                    text = dateFormatter.format(Date(item.timestamp)),
+                                    color = theme.textSecondary.copy(alpha = 0.6f),
+                                    fontSize = 11.sp
+                                )
+
+                                IconButton(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.toggleFavoriteHistory(item)
+                                    },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                                        contentDescription = "Favorite",
+                                        tint = if (item.isFavorite) Color(0xFFFFB703) else theme.textSecondary.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Small expression
+                            Text(
+                                text = item.expression,
+                                color = theme.textSecondary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Normal
+                            )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            // Large orange result: 10,320
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = item.result,
+                                    color = theme.primaryAccent,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Text(
+                                    text = "Hold for options",
+                                    color = theme.textSecondary.copy(alpha = 0.45f),
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
-    // Confirmation Dialog for Clearing History
+    // ----------------------------------------------------
+    // Long Press Bottom Sheet:
+    // - Copy Expression
+    // - Copy Result
+    // - Reuse in Calculator
+    // - Delete
+    // ----------------------------------------------------
+    if (selectedItemForSheet != null) {
+        val targetItem = selectedItemForSheet!!
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+        ModalBottomSheet(
+            onDismissRequest = { selectedItemForSheet = null },
+            sheetState = sheetState,
+            containerColor = if (theme.isLight) Color(0xFFFBF9F6) else Color(0xFF1E1E22),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Header preview
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (theme.isLight) Color.White else Color(0x22FFFFFF))
+                        .padding(14.dp)
+                ) {
+                    Text(text = targetItem.expression, color = theme.textSecondary, fontSize = 14.sp)
+                    Text(text = "= ${targetItem.result}", color = theme.primaryAccent, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Copy Expression
+                BottomSheetActionRow(
+                    icon = Icons.Default.ContentCopy,
+                    label = "Copy Expression",
+                    theme = theme
+                ) {
+                    viewModel.copyToClipboard(targetItem.expression)
+                    selectedItemForSheet = null
+                }
+
+                // Copy Result
+                BottomSheetActionRow(
+                    icon = Icons.Default.ContentCopy,
+                    label = "Copy Result",
+                    theme = theme
+                ) {
+                    viewModel.copyToClipboard(targetItem.result)
+                    selectedItemForSheet = null
+                }
+
+                // Reuse in Calculator
+                BottomSheetActionRow(
+                    icon = Icons.Default.Calculate,
+                    label = "Reuse in Calculator",
+                    theme = theme
+                ) {
+                    viewModel.reuseHistory(targetItem, asExpression = false)
+                    selectedItemForSheet = null
+                }
+
+                // Delete
+                BottomSheetActionRow(
+                    icon = Icons.Default.Delete,
+                    label = "Delete",
+                    theme = theme,
+                    tint = Color(0xFFFF5252)
+                ) {
+                    viewModel.deleteHistoryItem(targetItem)
+                    selectedItemForSheet = null
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
+    // Confirmation Dialog for Clearing All History
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
             title = {
-                Text(text = "Clear History", color = theme.textPrimary, fontWeight = FontWeight.Bold)
+                Text(text = "Clear All History", color = theme.textPrimary, fontWeight = FontWeight.Bold)
             },
             text = {
                 Text(
-                    text = "Are you sure you want to delete all saved calculations? This action cannot be undone.",
+                    text = "Are you sure you want to delete all stored calculations?",
                     color = theme.textSecondary
                 )
             },
@@ -271,7 +455,7 @@ fun HistoryScreen(
                         viewModel.clearAllHistory()
                         showClearDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF5C8A))
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF5252))
                 ) {
                     Text("Clear All", fontWeight = FontWeight.Bold)
                 }
@@ -284,139 +468,30 @@ fun HistoryScreen(
                     Text("Cancel")
                 }
             },
-            containerColor = Color(0xFF1E293B),
-            shape = RoundedCornerShape(32.dp)
+            containerColor = if (theme.isLight) Color.White else Color(0xFF242428),
+            shape = RoundedCornerShape(24.dp)
         )
     }
 }
 
 @Composable
-private fun HistoryItemCard(
-    item: CalculationEntity,
+private fun BottomSheetActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
     theme: ThemeMode,
-    formattedDate: String,
-    onReuseExpression: () -> Unit,
-    onReuseResult: () -> Unit,
-    onCopy: () -> Unit,
-    onDelete: () -> Unit,
-    onToggleFavorite: () -> Unit
+    tint: Color = theme.textPrimary,
+    onClick: () -> Unit
 ) {
-    LiquidGlassCard(
-        theme = theme,
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("history_item_${item.id}"),
-        shape = RoundedCornerShape(32.dp),
-        highlightIntensity = 0.4f
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Top Row: Type badge + Date + Favorite + Delete
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(theme.primaryAccent.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = item.calculationType,
-                            color = theme.primaryAccent,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = formattedDate,
-                        color = theme.textSecondary.copy(alpha = 0.6f),
-                        fontSize = 11.sp
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = onToggleFavorite,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                            contentDescription = "Favorite",
-                            tint = if (item.isFavorite) Color(0xFFFFD166) else theme.textSecondary.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onCopy,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy",
-                            tint = theme.textSecondary.copy(alpha = 0.7f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = Color(0xFFFF5C8A).copy(alpha = 0.7f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Expression Row (Click to reuse expression)
-            Text(
-                text = item.expression,
-                color = theme.textSecondary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onReuseExpression() }
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            // Result Row (Click to reuse result)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onReuseResult() },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "= ${item.result}",
-                    color = theme.primaryAccent,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "Tap to reuse",
-                    color = theme.textSecondary.copy(alpha = 0.5f),
-                    fontSize = 11.sp
-                )
-            }
-        }
+        Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(14.dp))
+        Text(text = label, color = tint, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
     }
 }

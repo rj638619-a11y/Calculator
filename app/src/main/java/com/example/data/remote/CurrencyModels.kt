@@ -20,6 +20,8 @@ data class CurrencyInfo(
 )
 
 object CurrencyData {
+    val SUPPORTED_CURRENCIES: List<CurrencyInfo> get() = CURRENCIES
+
     val CURRENCIES = listOf(
         CurrencyInfo("USD", "United States Dollar", "$", "🇺🇸"),
         CurrencyInfo("EUR", "Euro", "€", "🇪🇺"),

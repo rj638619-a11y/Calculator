@@ -98,8 +98,60 @@ data class CalculatorUiState(
     val dateAddWeeks: Int = 0,
     val dateAddDays: Int = 0,
     val dateIsAdd: Boolean = true,
-    val dateCalculatedTargetMillis: Long = System.currentTimeMillis() + 86400000L * 30
+    val dateCalculatedTargetMillis: Long = System.currentTimeMillis() + 86400000L * 30,
+
+    // GST Calculator
+    val gstAmount: String = "1000",
+    val gstRate: Double = 18.0,
+    val gstIsExclusive: Boolean = true,
+    val gstTax: Double = 180.0,
+    val gstTotal: Double = 1180.0,
+
+    // Loan EMI Calculator
+    val emiPrincipal: String = "100000",
+    val emiRate: String = "8.5",
+    val emiTenureMonths: String = "24",
+    val emiMonthlyPayment: Double = 4545.64,
+    val emiTotalInterest: Double = 9095.36,
+    val emiTotalPayment: Double = 109095.36,
+
+    // Age Calculator
+    val ageBirthMillis: Long = System.currentTimeMillis() - 86400000L * 365 * 25,
+    val ageYears: Int = 25,
+    val ageMonths: Int = 0,
+    val ageDays: Int = 0,
+    val ageNextBirthdayDays: Int = 180,
+
+    // BMI Calculator
+    val bmiWeightKg: String = "70",
+    val bmiHeightCm: String = "175",
+    val bmiScore: Double = 22.86,
+    val bmiCategory: String = "Normal weight",
+
+    // Active tool dialog/sheet
+    val activeToolDialog: ToolType? = null,
+
+    // Settings
+    val hapticFeedbackEnabled: Boolean = true,
+    val soundEnabled: Boolean = false,
+    val vibrationEnabled: Boolean = true,
+    val currentLanguage: String = "English",
+    val showSplash: Boolean = true,
+    val isSettingsOpen: Boolean = false,
+    val isThemesOpen: Boolean = false,
+    val isAboutOpen: Boolean = false
 )
+
+enum class ToolType(val title: String) {
+    PERCENTAGE("Percentage Calculator"),
+    GST("GST Calculator"),
+    LOAN_EMI("Loan EMI Calculator"),
+    TIP("Tip Calculator"),
+    AGE("Age Calculator"),
+    DATE("Date Calculator"),
+    DISCOUNT("Discount Calculator"),
+    BMI("BMI Calculator")
+}
 
 enum class ToolsSubTab(val title: String) {
     TIP("Tip Splitter"),
@@ -467,6 +519,29 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         recalculateCurrency()
     }
 
+    fun onCurrencyDigit(digit: String) {
+        val current = _uiState.value.currencyAmount
+        val updated = if (current == "0") digit else current + digit
+        setCurrencyAmount(updated)
+    }
+
+    fun onCurrencyBackspace() {
+        val current = _uiState.value.currencyAmount
+        val updated = if (current.length <= 1) "0" else current.dropLast(1)
+        setCurrencyAmount(updated)
+    }
+
+    fun onCurrencyClear() {
+        setCurrencyAmount("0")
+    }
+
+    fun onCurrencyDot() {
+        val current = _uiState.value.currencyAmount
+        if (!current.contains(".")) {
+            setCurrencyAmount("$current.")
+        }
+    }
+
     private fun recalculateCurrency() {
         val amount = _uiState.value.currencyAmount.toDoubleOrNull() ?: 0.0
         val converted = currencyRepository.convert(
@@ -519,6 +594,35 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     fun setUnitInputValue(value: String) {
         _uiState.update { it.copy(unitInputValue = value) }
         recalculateUnit()
+    }
+
+    fun onUnitDigit(digit: String) {
+        val current = _uiState.value.unitInputValue
+        val updated = if (current == "0") digit else current + digit
+        setUnitInputValue(updated)
+    }
+
+    fun onUnitBackspace() {
+        val current = _uiState.value.unitInputValue
+        val updated = if (current.length <= 1) "0" else current.dropLast(1)
+        setUnitInputValue(updated)
+    }
+
+    fun onUnitClear() {
+        setUnitInputValue("0")
+    }
+
+    fun onUnitDot() {
+        val current = _uiState.value.unitInputValue
+        if (!current.contains(".")) {
+            setUnitInputValue("$current.")
+        }
+    }
+
+    fun onUnitNegate() {
+        val current = _uiState.value.unitInputValue
+        val updated = if (current.startsWith("-")) current.drop(1) else "-$current"
+        setUnitInputValue(updated)
     }
 
     private fun recalculateUnit() {
@@ -677,6 +781,211 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
                 dateCalculatedTargetMillis = target
             )
         }
+    }
+
+    // ----------------------------------------------------
+    // Tool Dialog & Navigation
+    // ----------------------------------------------------
+    fun openTool(tool: ToolType) {
+        _uiState.update { it.copy(activeToolDialog = tool) }
+    }
+
+    fun closeTool() {
+        _uiState.update { it.copy(activeToolDialog = null) }
+    }
+
+    // ----------------------------------------------------
+    // GST Calculator Operations
+    // ----------------------------------------------------
+    fun setGstParams(amount: String, rate: Double, isExclusive: Boolean) {
+        val amt = amount.toDoubleOrNull() ?: 0.0
+        val tax = if (isExclusive) {
+            amt * (rate / 100.0)
+        } else {
+            amt - (amt / (1 + rate / 100.0))
+        }
+        val total = if (isExclusive) amt + tax else amt
+
+        _uiState.update {
+            it.copy(
+                gstAmount = amount,
+                gstRate = rate,
+                gstIsExclusive = isExclusive,
+                gstTax = tax,
+                gstTotal = total
+            )
+        }
+    }
+
+    // ----------------------------------------------------
+    // Loan EMI Calculator Operations
+    // ----------------------------------------------------
+    fun setEmiParams(principal: String, rate: String, tenureMonths: String) {
+        val p = principal.toDoubleOrNull() ?: 0.0
+        val r = (rate.toDoubleOrNull() ?: 0.0) / (12 * 100.0)
+        val n = tenureMonths.toDoubleOrNull() ?: 1.0
+
+        val emi = if (p > 0 && r > 0 && n > 0) {
+            val factor = Math.pow(1 + r, n)
+            (p * r * factor) / (factor - 1)
+        } else if (n > 0) {
+            p / n
+        } else 0.0
+
+        val totalPayment = emi * n
+        val totalInterest = (totalPayment - p).coerceAtLeast(0.0)
+
+        _uiState.update {
+            it.copy(
+                emiPrincipal = principal,
+                emiRate = rate,
+                emiTenureMonths = tenureMonths,
+                emiMonthlyPayment = emi,
+                emiTotalInterest = totalInterest,
+                emiTotalPayment = totalPayment
+            )
+        }
+    }
+
+    // ----------------------------------------------------
+    // Age Calculator Operations
+    // ----------------------------------------------------
+    fun setAgeBirthDate(birthMillis: Long) {
+        val birthCal = Calendar.getInstance().apply { timeInMillis = birthMillis }
+        val nowCal = Calendar.getInstance()
+
+        var years = nowCal.get(Calendar.YEAR) - birthCal.get(Calendar.YEAR)
+        var months = nowCal.get(Calendar.MONTH) - birthCal.get(Calendar.MONTH)
+        var days = nowCal.get(Calendar.DAY_OF_MONTH) - birthCal.get(Calendar.DAY_OF_MONTH)
+
+        if (days < 0) {
+            months--
+            val prevMonth = (nowCal.clone() as Calendar).apply { add(Calendar.MONTH, -1) }
+            days += prevMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
+        }
+        if (months < 0) {
+            years--
+            months += 12
+        }
+
+        val nextBirthday = Calendar.getInstance().apply {
+            set(Calendar.MONTH, birthCal.get(Calendar.MONTH))
+            set(Calendar.DAY_OF_MONTH, birthCal.get(Calendar.DAY_OF_MONTH))
+            if (before(nowCal)) add(Calendar.YEAR, 1)
+        }
+        val diffNext = ((nextBirthday.timeInMillis - nowCal.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
+
+        _uiState.update {
+            it.copy(
+                ageBirthMillis = birthMillis,
+                ageYears = years.coerceAtLeast(0),
+                ageMonths = months.coerceAtLeast(0),
+                ageDays = days.coerceAtLeast(0),
+                ageNextBirthdayDays = diffNext.coerceAtLeast(0)
+            )
+        }
+    }
+
+    // ----------------------------------------------------
+    // BMI Calculator Operations
+    // ----------------------------------------------------
+    fun setBmiParams(weightKg: String, heightCm: String) {
+        val w = weightKg.toDoubleOrNull() ?: 0.0
+        val hM = (heightCm.toDoubleOrNull() ?: 0.0) / 100.0
+
+        val bmi = if (w > 0 && hM > 0) w / (hM * hM) else 0.0
+        val category = when {
+            bmi < 18.5 -> "Underweight"
+            bmi < 25.0 -> "Normal weight"
+            bmi < 30.0 -> "Overweight"
+            else -> "Obese"
+        }
+
+        _uiState.update {
+            it.copy(
+                bmiWeightKg = weightKg,
+                bmiHeightCm = heightCm,
+                bmiScore = bmi,
+                bmiCategory = category
+            )
+        }
+    }
+
+    fun setPercentInputs(a: String, b: String) {
+        _uiState.update { it.copy(percentValA = a, percentValB = b) }
+        updatePercentageCalculation()
+    }
+
+    fun setTipParams(bill: String, percent: Double, people: Int, roundUp: Boolean) {
+        _uiState.update {
+            it.copy(
+                tipBill = bill,
+                tipPercent = percent,
+                tipPeopleCount = people.coerceIn(1, 100),
+                tipRoundUp = roundUp
+            )
+        }
+        updateTipCalculation()
+    }
+
+    fun setAgeBirthMillis(millis: Long) {
+        setAgeBirthDate(millis)
+    }
+
+    fun setDateRange(startMillis: Long, endMillis: Long) {
+        _uiState.update { it.copy(dateStartMillis = startMillis, dateEndMillis = endMillis) }
+        updateDateCalculation()
+    }
+
+    fun setDiscountParams(original: String, discount: String, tax: String) {
+        setDiscountInputs(original, discount, tax)
+    }
+
+    // ----------------------------------------------------
+    // Settings & Modal Screen Handlers
+    // ----------------------------------------------------
+    fun toggleHapticFeedback() {
+        _uiState.update { it.copy(hapticFeedbackEnabled = !it.hapticFeedbackEnabled) }
+    }
+
+    fun toggleSound() {
+        _uiState.update { it.copy(soundEnabled = !it.soundEnabled) }
+    }
+
+    fun toggleVibration() {
+        _uiState.update { it.copy(vibrationEnabled = !it.vibrationEnabled) }
+    }
+
+    fun setLanguage(lang: String) {
+        _uiState.update { it.copy(currentLanguage = lang) }
+    }
+
+    fun dismissSplash() {
+        _uiState.update { it.copy(showSplash = false) }
+    }
+
+    fun openSettings() {
+        _uiState.update { it.copy(isSettingsOpen = true) }
+    }
+
+    fun closeSettings() {
+        _uiState.update { it.copy(isSettingsOpen = false) }
+    }
+
+    fun openThemes() {
+        _uiState.update { it.copy(isThemesOpen = true) }
+    }
+
+    fun closeThemes() {
+        _uiState.update { it.copy(isThemesOpen = false) }
+    }
+
+    fun openAbout() {
+        _uiState.update { it.copy(isAboutOpen = true) }
+    }
+
+    fun closeAbout() {
+        _uiState.update { it.copy(isAboutOpen = false) }
     }
 
     // ----------------------------------------------------

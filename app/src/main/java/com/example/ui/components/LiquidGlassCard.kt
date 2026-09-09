@@ -9,12 +9,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.ThemeMode
@@ -23,45 +20,45 @@ import com.example.ui.theme.ThemeMode
 fun LiquidGlassCard(
     theme: ThemeMode,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(32.dp),
+    shape: Shape = RoundedCornerShape(24.dp),
     borderWidth: Dp = 1.dp,
+    elevation: Dp = 6.dp,
     highlightIntensity: Float = 0.4f,
     content: @Composable BoxScope.() -> Unit
 ) {
+    val cardBg = if (theme.isLight) {
+        Color.White
+    } else {
+        theme.surfaceGlass
+    }
+
+    val cardBorder = if (theme.isLight) {
+        Color(0x0F000000)
+    } else {
+        theme.borderGlass.copy(alpha = 0.35f)
+    }
+
+    val shadowSpot = if (theme.isLight) Color(0x14000000) else Color(0x66000000)
+    val shadowAmbient = if (theme.isLight) Color(0x08000000) else Color(0x33000000)
+
     Box(
         modifier = modifier
-            .graphicsLayer {
-                // Hardware layer optimization for smooth 60fps compositing
-                clip = true
-                this.shape = shape
-            }
-            .clip(shape)
-            .background(theme.surfaceGlass)
-            .background(Color.White.copy(alpha = 0.12f)) // Soft semi-transparent white glass overlay
-            .border(
-                width = borderWidth,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.25f * highlightIntensity + 0.15f),
-                        theme.borderGlass.copy(alpha = 0.20f * highlightIntensity),
-                        Color.White.copy(alpha = 0.12f)
-                    ),
-                    start = Offset(0f, 0f),
-                    end = Offset(400f, 400f)
-                ),
-                shape = shape
+            .then(
+                if (elevation > 0.dp) {
+                    Modifier.shadow(
+                        elevation = elevation,
+                        shape = shape,
+                        spotColor = shadowSpot,
+                        ambientColor = shadowAmbient
+                    )
+                } else Modifier
             )
-            .drawBehind {
-                // Specular top edge light line
-                val strokeWidth = 1.dp.toPx()
-                drawLine(
-                    color = Color.White.copy(alpha = 0.35f * highlightIntensity + 0.1f),
-                    start = Offset(24.dp.toPx(), strokeWidth),
-                    end = Offset(size.width - 24.dp.toPx(), strokeWidth),
-                    strokeWidth = strokeWidth
-                )
-            },
+            .clip(shape)
+            .background(cardBg)
+            .border(
+                border = BorderStroke(borderWidth, cardBorder),
+                shape = shape
+            ),
         content = content
     )
 }
-

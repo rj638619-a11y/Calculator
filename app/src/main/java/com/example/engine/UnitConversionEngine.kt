@@ -24,6 +24,8 @@ data class UnitItem(
 
 object UnitConversionEngine {
 
+    fun getUnitsForCategory(category: UnitCategory): List<UnitItem> = UNITS[category] ?: emptyList()
+
     val CATEGORIES = UnitCategory.values().toList()
 
     val UNITS: Map<UnitCategory, List<UnitItem>> = mapOf(
