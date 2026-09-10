@@ -78,7 +78,11 @@ class MainActivity : ComponentActivity() {
             }
 
             SmartCalculatorTheme(themeMode = state.theme) {
-                LiquidGlassBackground(theme = state.theme) {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.example.ui.components.LocalVibrationEnabled provides state.hapticFeedbackEnabled,
+                    com.example.ui.components.LocalSoundEnabled provides state.soundEnabled
+                ) {
+                    LiquidGlassBackground(theme = state.theme) {
                     if (state.showSplash) {
                         SplashScreen(
                             theme = state.theme,
@@ -183,6 +187,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
     }
 
     // Hardware Keyboard Support

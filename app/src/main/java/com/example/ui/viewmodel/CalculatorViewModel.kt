@@ -268,24 +268,38 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun onInput(charOrFunc: String) {
         val currentExp = _uiState.value.expression
-        val newExp = when (charOrFunc) {
-            "sin", "cos", "tan", "asin", "acos", "atan", "log", "ln", "sqrt", "cbrt", "abs" -> {
-                "$currentExp$charOrFunc("
-            }
-            "1/x" -> {
-                if (currentExp.isEmpty()) "1/(" else "$currentExp*(1/("
-            }
-            "x²" -> "$currentExp^2"
-            "x³" -> "$currentExp^3"
-            "x^y" -> "$currentExp^"
-            "+/-" -> {
-                if (currentExp.startsWith("-(")) {
-                    currentExp.removePrefix("-(").removeSuffix(")")
-                } else {
-                    "-($currentExp)"
+        val operators = setOf("+", "-", "−", "×", "÷", "%", "^", ".")
+        val isNewOperator = charOrFunc in operators
+
+        var baseExp = currentExp
+        if (isNewOperator && currentExp.isNotEmpty()) {
+            val lastChar = currentExp.last().toString()
+            if (lastChar in operators) {
+                val isNegativeAfterMulDiv = (charOrFunc == "-" || charOrFunc == "−") && (lastChar == "×" || lastChar == "÷")
+                if (!isNegativeAfterMulDiv) {
+                    baseExp = currentExp.dropLast(1)
                 }
             }
-            else -> "$currentExp$charOrFunc"
+        }
+
+        val newExp = when (charOrFunc) {
+            "sin", "cos", "tan", "asin", "acos", "atan", "log", "ln", "sqrt", "cbrt", "abs" -> {
+                "$baseExp$charOrFunc("
+            }
+            "1/x" -> {
+                if (baseExp.isEmpty()) "1/(" else "$baseExp*(1/("
+            }
+            "x²" -> "$baseExp^2"
+            "x³" -> "$baseExp^3"
+            "x^y" -> "$baseExp^"
+            "+/-" -> {
+                if (baseExp.startsWith("-(")) {
+                    baseExp.removePrefix("-(").removeSuffix(")")
+                } else {
+                    "-($baseExp)"
+                }
+            }
+            else -> "$baseExp$charOrFunc"
         }
 
         _uiState.update { it.copy(expression = newExp, isError = false, errorMessage = "") }

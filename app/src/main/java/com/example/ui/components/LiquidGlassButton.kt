@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.ThemeMode
 
+val LocalVibrationEnabled = androidx.compose.runtime.staticCompositionLocalOf { true }
+val LocalSoundEnabled = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 enum class CalcButtonType {
     NUMBER,
     OPERATOR,
@@ -55,9 +58,13 @@ fun LiquidGlassButton(
     icon: ImageVector? = null,
     fontSize: TextUnit = 24.sp,
     shape: Shape = RoundedCornerShape(26.dp),
-    testTag: String = text.lowercase()
+    testTag: String = text.lowercase(),
+    vibrationEnabled: Boolean = LocalVibrationEnabled.current,
+    soundEnabled: Boolean = LocalSoundEnabled.current
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val view = androidx.compose.ui.platform.LocalView.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -168,7 +175,14 @@ fun LiquidGlassButton(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (vibrationEnabled) {
+                        com.example.util.VibrationHelper.tick(context)
+                    } else {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    }
+                    if (soundEnabled) {
+                        view.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                    }
                     onClick()
                 }
             )

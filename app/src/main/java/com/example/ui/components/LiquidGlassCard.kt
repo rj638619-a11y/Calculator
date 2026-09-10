@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
@@ -26,20 +27,42 @@ fun LiquidGlassCard(
     highlightIntensity: Float = 0.4f,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val cardBg = if (theme.isLight) {
-        Color.White
-    } else {
-        theme.surfaceGlass
-    }
+    val isLight = theme.isLight
 
-    val cardBorder = if (theme.isLight) {
-        Color(0x0F000000)
-    } else {
-        theme.borderGlass.copy(alpha = 0.35f)
-    }
+    // High-end dual-tone gradient background for true liquid glass feel
+    val cardBgBrush = Brush.verticalGradient(
+        colors = if (isLight) {
+            listOf(
+                Color.White.copy(alpha = 0.85f),
+                Color.White.copy(alpha = 0.55f)
+            )
+        } else {
+            listOf(
+                theme.surfaceGlass.copy(alpha = 0.72f),
+                theme.surfaceGlass.copy(alpha = 0.42f)
+            )
+        }
+    )
 
-    val shadowSpot = if (theme.isLight) Color(0x14000000) else Color(0x66000000)
-    val shadowAmbient = if (theme.isLight) Color(0x08000000) else Color(0x33000000)
+    // Highly polished double-layered border simulating fine light refraction
+    val cardBorderBrush = Brush.verticalGradient(
+        colors = if (isLight) {
+            listOf(
+                Color.White.copy(alpha = 0.75f),
+                Color.White.copy(alpha = 0.25f),
+                theme.primaryAccent.copy(alpha = 0.15f)
+            )
+        } else {
+            listOf(
+                Color.White.copy(alpha = 0.32f),
+                Color.White.copy(alpha = 0.05f),
+                theme.primaryAccent.copy(alpha = 0.12f)
+            )
+        }
+    )
+
+    val shadowSpot = if (isLight) Color(0x10000000) else Color(0x52000000)
+    val shadowAmbient = if (isLight) Color(0x05000000) else Color(0x24000000)
 
     Box(
         modifier = modifier
@@ -54,9 +77,9 @@ fun LiquidGlassCard(
                 } else Modifier
             )
             .clip(shape)
-            .background(cardBg)
+            .background(cardBgBrush)
             .border(
-                border = BorderStroke(borderWidth, cardBorder),
+                border = BorderStroke(borderWidth, cardBorderBrush),
                 shape = shape
             ),
         content = content
