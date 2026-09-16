@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -59,6 +61,7 @@ fun LiquidGlassButton(
     fontSize: TextUnit = 24.sp,
     shape: Shape = RoundedCornerShape(26.dp),
     testTag: String = text.lowercase(),
+    contentDescription: String? = null,
     vibrationEnabled: Boolean = LocalVibrationEnabled.current,
     soundEnabled: Boolean = LocalSoundEnabled.current
 ) {
@@ -186,7 +189,12 @@ fun LiquidGlassButton(
                     onClick()
                 }
             )
-            .testTag(testTag),
+            .testTag(testTag)
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else Modifier
+            ),
         contentAlignment = Alignment.Center
     ) {
         if (icon != null) {
