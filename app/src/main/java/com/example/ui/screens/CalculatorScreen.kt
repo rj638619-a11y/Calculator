@@ -644,6 +644,7 @@ private fun StandardKeypad(
             horizontalArrangement = Arrangement.spacedBy(spacing)
         ) {
             val clearText = if (state.expression.isEmpty()) "AC" else "C"
+            val clearDesc = if (state.expression.isEmpty()) "All Clear" else "Clear"
             LiquidGlassButton(
                 text = clearText,
                 onClick = { viewModel.onClear() },
@@ -651,7 +652,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.FUNCTION,
                 fontSize = 20.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_ac"
+                testTag = "btn_ac",
+                contentDescription = clearDesc
             )
             LiquidGlassButton(
                 text = "( )",
@@ -668,7 +670,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.FUNCTION,
                 fontSize = 20.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_parens"
+                testTag = "btn_parens",
+                contentDescription = "Parentheses"
             )
             LiquidGlassButton(
                 text = "⌫",
@@ -677,7 +680,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.FUNCTION,
                 fontSize = 20.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_backspace"
+                testTag = "btn_backspace",
+                contentDescription = "Backspace"
             )
             LiquidGlassButton(
                 text = "÷",
@@ -686,7 +690,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.OPERATOR,
                 fontSize = 26.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_divide"
+                testTag = "btn_divide",
+                contentDescription = "Divide"
             )
         }
 
@@ -726,7 +731,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.OPERATOR,
                 fontSize = 26.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_multiply"
+                testTag = "btn_multiply",
+                contentDescription = "Multiply"
             )
         }
 
@@ -766,7 +772,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.OPERATOR,
                 fontSize = 26.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_minus"
+                testTag = "btn_minus",
+                contentDescription = "Subtract"
             )
         }
 
@@ -806,7 +813,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.OPERATOR,
                 fontSize = 26.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_plus"
+                testTag = "btn_plus",
+                contentDescription = "Add"
             )
         }
 
@@ -822,7 +830,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.FUNCTION,
                 fontSize = 18.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_negate"
+                testTag = "btn_negate",
+                contentDescription = "Negate"
             )
             LiquidGlassButton(
                 text = "0",
@@ -839,7 +848,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.NUMBER,
                 fontSize = 24.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_dot"
+                testTag = "btn_dot",
+                contentDescription = "Decimal point"
             )
             LiquidGlassButton(
                 text = "=",
@@ -848,7 +858,8 @@ private fun StandardKeypad(
                 type = CalcButtonType.EQUALS,
                 fontSize = 30.sp,
                 modifier = Modifier.weight(1f).height(buttonHeight),
-                testTag = "btn_equals"
+                testTag = "btn_equals",
+                contentDescription = "Equals"
             )
         }
     }

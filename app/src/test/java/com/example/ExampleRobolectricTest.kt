@@ -9,6 +9,13 @@ import com.example.engine.UnitCategory
 import com.example.engine.UnitConversionEngine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import com.example.ui.components.CalcButtonType
+import com.example.ui.components.LiquidGlassButton
+import com.example.ui.theme.ThemeMode
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -17,6 +24,27 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class ExampleRobolectricTest {
+
+  @get:Rule
+  val composeTestRule = createComposeRule()
+
+  @Test
+  fun `test liquid glass button content description semantics`() {
+    composeTestRule.setContent {
+      LiquidGlassButton(
+        text = "÷",
+        onClick = {},
+        theme = ThemeMode.LIGHT,
+        type = CalcButtonType.OPERATOR,
+        testTag = "btn_divide",
+        contentDescription = "Divide"
+      )
+    }
+
+    composeTestRule
+      .onNodeWithTag("btn_divide")
+      .assertContentDescriptionEquals("Divide")
+  }
 
   @Test
   fun `read string from context`() {
